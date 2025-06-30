@@ -1,0 +1,214 @@
+@inject NavigationManager Navigation
+
+<style>
+    /* Header */
+    .header {
+        background: #fff;
+        padding: 15px 30px;
+        border-bottom: 1px solid #E7EAEE;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 998;
+        height: 80px;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 25px;
+        position: relative;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        transition: background 0.3s ease;
+        position: relative;
+    }
+
+    .user-avatar {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, #ff6b35 0%, #f7931e 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+    }
+
+    /* User Dropdown Menu */
+    .user-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: #fff;
+        border: 1px solid #E7EAEE;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        min-width: 200px;
+        z-index: 1001;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+    }
+
+    .user-dropdown.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .dropdown-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #E7EAEE;
+        background: #f8f9fa;
+    }
+
+    .dropdown-user-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: #0A1A28;
+        margin: 0;
+    }
+
+    .dropdown-user-role {
+        font-size: 12px;
+        color: #666;
+        margin: 2px 0 0 0;
+    }
+
+    .dropdown-menu {
+        padding: 8px 0;
+    }
+
+    .dropdown-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        color: #666;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    .dropdown-item:hover {
+        background: #f8f9fa;
+        color: #0A1A28;
+    }
+
+    .dropdown-item.logout:hover {
+        background: #ffeaea;
+        color: #dc3545;
+    }
+
+    .dropdown-item i {
+        width: 16px;
+        text-align: center;
+        font-size: 14px;
+    }
+
+    /* Overlay for closing dropdown */
+    .dropdown-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1000;
+        display: none;
+    }
+
+    .dropdown-overlay.show {
+        display: block;
+    }
+
+    /* Chevron rotation styles */
+    .user-info .fa-chevron-down {
+        transition: transform 0.3s ease;
+        font-size: 12px;
+    }
+
+    .user-info.menu-open .fa-chevron-down {
+        transform: rotate(180deg);
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .header {
+            padding: 15px 20px;
+            flex-direction: column;
+            gap: 15px;
+            height: auto;
+        }
+
+        .user-dropdown {
+            right: 20px;
+        }
+    }
+</style>
+
+<div class="header">
+    <div class="header-right">
+        <div class="user-info">
+            <div class="user-avatar">A</div>
+            <div>
+                <div style="font-weight: 600; font-size: 14px;">Admin User</div>
+                <div style="font-size: 12px; color: #666;">Administrator</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Overlay to close dropdown when clicking outside -->
+<div class="dropdown-overlay @(showUserMenu ? "show" : "")" @onclick="CloseUserMenu"></div>
+
+@code {
+    private bool showUserMenu = false;
+
+    private void ToggleUserMenu()
+    {
+        showUserMenu = !showUserMenu;
+        StateHasChanged();
+    }
+
+    private void CloseUserMenu()
+    {
+        showUserMenu = false;
+    }
+
+    private void ViewProfile()
+    {
+        showUserMenu = false;
+        Navigation.NavigateTo("/profile");
+    }
+
+    private void AccountSettings()
+    {
+        showUserMenu = false;
+        Navigation.NavigateTo("/account-settings");
+    }
+
+    private void Logout()
+    {
+        showUserMenu = false;
+        Navigation.NavigateTo("/login");
+    }
+}

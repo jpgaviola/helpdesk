@@ -1,0 +1,1485 @@
+@page "/tickets/create"
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using System.ComponentModel.DataAnnotations
+@using HelpdeskBlazor.Models
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject HelpdeskBlazor.Services.ITicketService TicketService
+@using System.IO
+
+<style>
+    .create-ticket-container {
+        padding: 30px;
+        background: #f8f9fa;
+        min-height: calc(100vh - 80px);
+    }
+
+    .page-header {
+        background: white;
+        padding: 25px 30px;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 25px;
+        border-left: 4px solid #ff6b35;
+    }
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0A1A28;
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .page-title i {
+        color: #ff6b35;
+        font-size: 24px;
+    }
+
+    .page-subtitle {
+        color: #666;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+    }
+
+    .form-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 20px 30px;
+        border-bottom: 1px solid #E7EAEE;
+    }
+
+    .form-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #0A1A28;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .form-header i {
+        color: #ff6b35;
+        font-size: 16px;
+    }
+
+    .form-content {
+        padding: 30px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        margin-bottom: 25px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #0A1A28;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .form-label.required::after {
+        content: " *";
+        color: #dc3545;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #E7EAEE;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #fff;
+        font-family: inherit;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .form-textarea.description {
+        min-height: 180px;
+    }
+
+    .form-select {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+        padding-right: 40px;
+        appearance: none;
+    }
+
+    .priority-options {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+
+    .priority-option {
+        position: relative;
+    }
+
+    .priority-radio {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .priority-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 12px 15px;
+        border: 2px solid #E7EAEE;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .priority-radio:checked+.priority-label.high {
+        border-color: #dc3545;
+        background: #fff5f5;
+        color: #dc3545;
+    }
+
+    .priority-radio:checked+.priority-label.medium {
+        border-color: #ffc107;
+        background: #fffdf0;
+        color: #856404;
+    }
+
+    .priority-radio:checked+.priority-label.low {
+        border-color: #28a745;
+        background: #f0fff4;
+        color: #155724;
+    }
+
+    .priority-label:hover {
+        background: #f8f9fa;
+    }
+
+    .uploaded-files {
+        margin-top: 15px;
+        border: 1px solid #E7EAEE;
+        border-radius: 8px;
+        background: #ffffff;
+    }
+
+    .files-header {
+        padding: 12px 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #E7EAEE;
+        border-radius: 8px 8px 0 0;
+        font-weight: 600;
+        font-size: 14px;
+        color: #0A1A28;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .files-header i {
+        color: #ff6b35;
+    }
+
+    .file-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f1f3f4;
+        transition: all 0.3s ease;
+    }
+
+    .file-item:last-child {
+        border-bottom: none;
+        border-radius: 0 0 8px 8px;
+    }
+
+    .file-item:hover {
+        background: #f8f9fa;
+    }
+
+    .file-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+    }
+
+    .file-icon {
+        color: #666;
+        font-size: 18px;
+        width: 24px;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .file-details {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+        /* Allow text truncation */
+    }
+
+    .file-name {
+        font-weight: 500;
+        color: #0A1A28;
+        font-size: 13px;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .file-meta {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11px;
+        color: #666;
+    }
+
+    .file-size {
+        font-weight: 500;
+    }
+
+    .file-type {
+        color: #999;
+    }
+
+    .remove-file-btn {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.7;
+    }
+
+    .remove-file-btn:hover {
+        background: #fff5f5;
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    .file-upload-area {
+        border: 2px dashed #E7EAEE;
+        border-radius: 12px;
+        padding: 40px 20px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        background: #fafbfc;
+    }
+
+    .file-upload-area:hover {
+        border-color: #ff6b35;
+        background: #fff8f5;
+    }
+
+    .file-upload-content {
+        pointer-events: none;
+    }
+
+    .file-upload-icon {
+        font-size: 48px;
+        color: #ccc;
+        margin-bottom: 15px;
+    }
+
+    .file-upload-text {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 8px;
+        font-weight: 500;
+    }
+
+    .file-upload-hint {
+        font-size: 12px;
+        color: #999;
+    }
+
+    .file-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        margin-top: 30px;
+        padding-top: 25px;
+        border-top: 1px solid #E7EAEE;
+    }
+
+    .btn {
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-outline {
+        background: transparent;
+        color: #666;
+        border: 2px solid #E7EAEE;
+    }
+
+    .btn-outline:hover {
+        background: #f8f9fa;
+        border-color: #dee2e6;
+        color: #333;
+        text-decoration: none;
+    }
+
+    .form-help-text {
+        font-size: 12px;
+        color: #666;
+        margin-top: 5px;
+        font-style: italic;
+    }
+
+    .validation-error {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+    }
+
+    .error-message {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .success-banner {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border: 1px solid #c3e6cb;
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 25px;
+        color: #155724;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .success-banner i {
+        color: #28a745;
+        font-size: 18px;
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .loading-spinner {
+        border: 2px solid transparent;
+        border-top: 2px solid currentColor;
+        border-radius: 50%;
+        width: 14px;
+        height: 14px;
+        animation: spin 1s linear infinite;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .create-ticket-container {
+            padding: 20px 15px;
+        }
+
+        .form-content {
+            padding: 20px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .priority-options {
+            grid-template-columns: 1fr;
+        }
+
+        .form-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .btn {
+            justify-content: center;
+        }
+    }
+
+    /* Toast Notification Styles */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
+
+    .toast {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+        max-width: 400px;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        pointer-events: auto;
+        border-left: 4px solid;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+    }
+
+    .toast.success {
+        border-left-color: #28a745;
+    }
+
+    .toast.error {
+        border-left-color: #dc3545;
+    }
+
+    .toast.info {
+        border-left-color: #007bff;
+    }
+
+    .toast-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+
+    .toast.success .toast-icon {
+        background: #28a745;
+    }
+
+    .toast.error .toast-icon {
+        background: #dc3545;
+    }
+
+    .toast.info .toast-icon {
+        background: #007bff;
+    }
+
+    .toast-content {
+        flex: 1;
+    }
+
+    .toast-title {
+        font-weight: 600;
+        color: #0A1A28;
+        font-size: 14px;
+        margin: 0 0 2px 0;
+    }
+
+    .toast-message {
+        color: #666;
+        font-size: 13px;
+        margin: 0;
+    }
+
+    .toast-close {
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        padding: 0;
+        font-size: 16px;
+        line-height: 1;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .toast-close:hover {
+        color: #666;
+    }
+
+    .simple-upload-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+
+    .file-input-hidden {
+        display: none;
+    }
+
+    .upload-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        color: #495057;
+        transition: all 0.2s ease;
+        margin: 0;
+    }
+
+    .upload-button:hover {
+        background: #e9ecef;
+        border-color: #adb5bd;
+        color: #343a40;
+    }
+
+    .upload-help {
+        font-size: 12px;
+        color: #6c757d;
+        font-style: italic;
+    }
+
+    /* Files List - Simple Table Design */
+    .files-list {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        background: white;
+        margin-top: 15px;
+    }
+
+    .files-header-simple {
+        padding: 12px 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-size: 14px;
+        color: #495057;
+    }
+
+    .files-table {
+        /* No additional styling needed */
+    }
+
+    .file-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f1f3f4;
+    }
+
+    .file-row:last-child {
+        border-bottom: none;
+    }
+
+    .file-row:hover {
+        background: #f8f9fa;
+    }
+
+    .file-info-simple {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+    }
+
+    .file-info-simple i {
+        color: #6c757d;
+        width: 16px;
+        text-align: center;
+    }
+
+    .file-name-simple {
+        font-weight: 500;
+        color: #212529;
+        font-size: 14px;
+    }
+
+    .file-size-simple {
+        color: #6c757d;
+        font-size: 12px;
+        margin-left: 5px;
+    }
+
+    .remove-btn-simple {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        transition: all 0.2s ease;
+    }
+
+    .remove-btn-simple:hover {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    /* Mobile Responsive */
+    @@media (max-width: 768px) {
+        .simple-upload-container {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .file-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .remove-btn-simple {
+            align-self: flex-end;
+        }
+    }
+
+    .working-file-input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #E7EAEE;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #fff;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .working-file-input:hover {
+        border-color: #ff6b35;
+        background: #fff8f5;
+    }
+
+    .working-file-input:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    }
+
+    /* Style the file selector button */
+    .working-file-input::file-selector-button {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        margin-right: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .working-file-input::file-selector-button:hover {
+        background: linear-gradient(135deg, #f7931e 0%, #e8821a 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    }
+
+    .upload-help {
+        font-size: 12px;
+        color: #6c757d;
+        font-style: italic;
+    }
+</style>
+
+<div class="create-ticket-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-plus"></i>
+            Create New Ticket
+        </h1>
+        <p class="page-subtitle">Submit a new support request</p>
+    </div>
+
+    @if (showSuccessMessage)
+    {
+        <div class="success-banner">
+            <i class="fas fa-check-circle"></i>
+            <div>
+                <strong>Ticket Created Successfully!</strong>
+                Your ticket #@lastCreatedTicketId has been submitted and will be reviewed shortly.
+            </div>
+        </div>
+    }
+
+    <!-- Create Ticket Form -->
+    <div class="form-container">
+        <div class="form-header">
+            <h3>
+                <i class="fas fa-edit"></i>
+                Ticket Details
+            </h3>
+        </div>
+
+        <div class="form-content">
+            <EditForm Model="@ticketModel" OnValidSubmit="@HandleSubmit">
+                <DataAnnotationsValidator />
+
+                <!-- Basic Information Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label required">Requester Name</label>
+                        <InputText @bind-Value="ticketModel.RequesterName" class="form-input"
+                            placeholder="Enter your full name" />
+                        <ValidationMessage For="@(() => ticketModel.RequesterName)" class="error-message" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Email Address</label>
+                        <InputText @bind-Value="ticketModel.RequesterEmail" class="form-input"
+                            placeholder="your.email@company.com" type="email" />
+                        <ValidationMessage For="@(() => ticketModel.RequesterEmail)" class="error-message" />
+                    </div>
+                </div>
+
+                <!-- Department and Category Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label required">Department</label>
+                        <InputSelect @bind-Value="ticketModel.Department" class="form-select">
+                            <option value="">Select Department</option>
+                            <option value="IT">Information Technology</option>
+                            <option value="HR">Human Resources</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Operations">Operations</option>
+                            <option value="Facilities">Facilities</option>
+                            <option value="Security">Security</option>
+                        </InputSelect>
+                        <ValidationMessage For="@(() => ticketModel.Department)" class="error-message" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Category</label>
+                        <InputSelect @bind-Value="ticketModel.Category" class="form-select">
+                            <option value="">Select Category</option>
+                            <option value="Hardware">Hardware Issue</option>
+                            <option value="Software">Software Issue</option>
+                            <option value="Network">Network/Connectivity</option>
+                            <option value="Account">Account Access</option>
+                            <option value="Request">Service Request</option>
+                            <option value="Other">Other</option>
+                        </InputSelect>
+                        <ValidationMessage For="@(() => ticketModel.Category)" class="error-message" />
+                    </div>
+                </div>
+
+                <!-- Subject -->
+                <div class="form-group full-width">
+                    <label class="form-label required">Subject</label>
+                    <InputText @bind-Value="ticketModel.Subject" class="form-input"
+                        placeholder="Brief description of the issue" />
+                    <div class="form-help-text">Provide a clear, concise summary of your issue</div>
+                    <ValidationMessage For="@(() => ticketModel.Subject)" class="error-message" />
+                </div>
+
+                <!-- Priority Selection - CORRECTED WITH InputRadioGroup -->
+                <div class="form-group full-width">
+                    <label class="form-label required">Priority Level</label>
+                    <InputRadioGroup @bind-Value="ticketModel.Priority">
+                        <div class="priority-options">
+                            <div class="priority-option">
+                                <InputRadio Value=@("Low") class="priority-radio" id="priority-low" />
+                                <label for="priority-low" class="priority-label low">
+                                    <i class="fas fa-arrow-down"></i>&nbsp;&nbsp;Low
+                                </label>
+                            </div>
+                            <div class="priority-option">
+                                <InputRadio Value=@("Medium") class="priority-radio" id="priority-medium" />
+                                <label for="priority-medium" class="priority-label medium">
+                                    <i class="fas fa-minus"></i>&nbsp;&nbsp;Medium
+                                </label>
+                            </div>
+                            <div class="priority-option">
+                                <InputRadio Value=@("High") class="priority-radio" id="priority-high" />
+                                <label for="priority-high" class="priority-label high">
+                                    <i class="fas fa-arrow-up"></i>&nbsp;&nbsp;High
+                                </label>
+                            </div>
+                        </div>
+                    </InputRadioGroup>
+                    <ValidationMessage For="@(() => ticketModel.Priority)" class="error-message" />
+                </div>
+
+                <!-- Description -->
+                <div class="form-group full-width">
+                    <label class="form-label required">Description</label>
+                    <InputTextArea @bind-Value="ticketModel.Description" class="form-textarea description"
+                        placeholder="Please provide detailed information about the issue, including steps to reproduce, error messages, and any troubleshooting already attempted..." />
+                    <div class="form-help-text">Include as much detail as possible to help us resolve your issue quickly
+                    </div>
+                    <ValidationMessage For="@(() => ticketModel.Description)" class="error-message" />
+                </div>
+
+                <!-- File Upload Section - WORKING VERSION -->
+                <div class="form-group full-width">
+                    <label class="form-label">Attachments</label>
+
+                    <!-- Simple, Working Upload Input -->
+                    <div style="margin: 15px 0;">
+                        <InputFile OnChange="HandleFileSelected" multiple
+                            accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt" class="working-file-input" />
+                        <div class="upload-help" style="margin-top: 8px;">
+                            <i class="fas fa-info-circle" style="margin-right: 5px;"></i>
+                            Select multiple files up to 10MB each. Supported: Images, PDF, Word documents, Text files
+                        </div>
+                    </div>
+
+                    <!-- Selected Files List -->
+                    @if (uploadedFiles != null && uploadedFiles.Count > 0)
+                    {
+                        <div class="files-list">
+                            <div class="files-header-simple">
+                                <strong>Selected Files (@uploadedFiles.Count)</strong>
+                            </div>
+
+                            <div class="files-table">
+                                @for (int i = 0; i < uploadedFiles.Count; i++)
+                                {
+                                    var file = uploadedFiles[i];
+
+                                    <div class="file-row">
+                                        <div class="file-info-simple">
+                                            <i class="@GetFileIcon(file.Name)"></i>
+                                            <span class="file-name-simple">@file.Name</span>
+                                            <span class="file-size-simple">(@FormatFileSize(file.Size))</span>
+                                        </div>
+                                        <button type="button" class="remove-btn-simple" @onclick="() => RemoveFile(file)"
+                                            @onclick:preventDefault="true">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <a href="/tickets" class="btn btn-outline">
+                        <i class="fas fa-arrow-left"></i>
+                        Cancel
+                    </a>
+
+                    <div style="display: flex; gap: 15px;">
+                        @if (lastCreatedTicketId > 0)
+                        {
+                            <!-- Show navigation button after successful creation -->
+                            <a href="/tickets" class="btn btn-secondary">
+                                <i class="fas fa-list"></i>
+                                View All Tickets
+                            </a>
+                            <button type="button" class="btn btn-primary" @onclick="CreateAnotherTicket">
+                                <i class="fas fa-plus"></i>
+                                Create Another Ticket
+                            </button>
+                        }
+                        else
+                        {
+                            <!-- Show normal form buttons -->
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <div class="loading-spinner"></div>
+                                    <span>Creating Ticket...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-paper-plane"></i>
+                                    <span>Create Ticket</span>
+                                }
+                            </button>
+                        }
+                    </div>
+                </div>
+
+            </EditForm>
+        </div>
+        <!-- Toast Container -->
+        <div class="toast-container">
+            @foreach (var toast in toasts)
+            {
+                <div class="toast @toast.Type @(toast.IsVisible ? "show" : "")">
+                    <div class="toast-icon">
+                        @if (toast.Type == "success")
+                        {
+                            <i class="fas fa-check"></i>
+                        }
+                        else if (toast.Type == "error")
+                        {
+                            <i class="fas fa-times"></i>
+                        }
+                        else if (toast.Type == "info")
+                        {
+                            <i class="fas fa-info"></i>
+                        }
+                    </div>
+                    <div class="toast-content">
+                        <div class="toast-title">@toast.Title</div>
+                        <div class="toast-message">@toast.Message</div>
+                    </div>
+                    <button class="toast-close" @onclick="() => RemoveToast(toast.Id)">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private CreateTicketModel ticketModel { get; set; } = new();
+
+    private List<IBrowserFile> uploadedFiles = new();
+    private bool isSubmitting = false;
+    private bool showSuccessMessage = false;
+    private int lastCreatedTicketId = 0;
+    private List<ToastNotification> toasts = new List<ToastNotification>();
+    private int toastIdCounter = 0;
+
+    private void LogCurrentFiles()
+{
+   
+    if (uploadedFiles != null)
+    {
+        for (int i = 0; i < uploadedFiles.Count; i++)
+        {
+            
+        }
+    }
+}
+
+    private async Task HandleSubmit()
+{
+    isSubmitting = true;
+    try
+    {
+        // Debug: Check if files are selected
+        
+        if (uploadedFiles != null)
+        {
+            foreach (var file in uploadedFiles)
+            {
+
+            }
+        }
+
+        // Create ticket object
+        var ticket = new Ticket
+        {
+            RequesterName = ticketModel.RequesterName,
+            RequesterEmail = ticketModel.RequesterEmail,
+            Department = ticketModel.Department,
+            Category = ticketModel.Category,
+            Subject = ticketModel.Subject,
+            Priority = ticketModel.Priority,
+            Description = ticketModel.Description,
+            Status = "Open",
+            IsDraft = false,
+            CreatedDate = DateTime.Now
+        };
+
+        // Save ticket to database
+        var createdTicket = await TicketService.CreateTicketAsync(ticket);
+        lastCreatedTicketId = createdTicket.Id;
+       
+
+        // Handle file uploads if any
+        if (uploadedFiles != null && uploadedFiles.Count > 0)
+        {
+          
+            
+            // Create uploads directory if it doesn't exist
+            var uploadPath = Path.Combine("wwwroot", "uploads", createdTicket.Id.ToString());
+           
+            
+            Directory.CreateDirectory(uploadPath);
+          
+
+            foreach (var file in uploadedFiles)
+            {
+                try
+                {
+                 
+                    
+                    // Generate unique filename to prevent conflicts
+                    var uniqueFileName = $"{Guid.NewGuid()}_{file.Name}";
+                    var filePath = Path.Combine(uploadPath, uniqueFileName);
+                   
+
+                    // Save the actual file to disk
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(stream);
+                    }
+                    
+                   
+                    if (File.Exists(filePath))
+                    {
+                        var fileInfo = new FileInfo(filePath);
+                      
+                    }
+
+                    // Create database record for the attachment
+                    var attachment = new TicketAttachment
+                    {
+                        TicketId = createdTicket.Id,
+                        FileName = file.Name, // Original filename
+                        FilePath = $"/uploads/{createdTicket.Id}/{uniqueFileName}", // Web-accessible path
+                        ContentType = file.ContentType,
+                        FileSize = file.Size,
+                        UploadedDate = DateTime.Now
+                    };
+
+                  
+                    
+                    var savedAttachment = await TicketService.AddAttachmentAsync(attachment);
+                   
+                }
+                catch (Exception fileEx)
+                {
+                 
+                    
+                    // Log file-specific error but continue with other files
+                    await ShowToast("File Upload Error", 
+                        $"Failed to upload {file.Name}: {fileEx.Message}", 
+                        "error");
+                }
+            }
+        }
+        else
+        {
+          
+        }
+
+        // Show success toast
+        await ShowToast("Ticket Created Successfully!",
+            $"Your ticket #{createdTicket.Id} has been submitted and will be reviewed shortly.",
+            "success");
+
+        // Reset form
+        ticketModel = new CreateTicketModel();
+        uploadedFiles.Clear();
+    }
+    catch (Exception ex)
+    {
+       
+        await ShowToast("Error Creating Ticket",
+            $"An error occurred while creating your ticket: {ex.Message}",
+            "error");
+    }
+    finally
+    {
+        isSubmitting = false;
+        StateHasChanged();
+    }
+}
+
+    // Update your SaveAsDraft method to use toast as well:
+    private async Task SaveAsDraft()
+    {
+        // Add your draft saving logic here
+        await ShowToast("Draft Saved", "Your ticket has been saved as a draft!", "info");
+    }
+
+    // Add these new methods for toast functionality:
+    private async Task ShowToast(string title, string message, string type = "success")
+    {
+        var toast = new ToastNotification
+        {
+            Id = ++toastIdCounter,
+            Title = title,
+            Message = message,
+            Type = type,
+            IsVisible = false
+        };
+
+        toasts.Add(toast);
+        StateHasChanged();
+
+        // Show toast with slight delay for animation
+        await Task.Delay(100);
+        toast.IsVisible = true;
+        StateHasChanged();
+
+        // Auto-remove after 4 seconds
+        _ = Task.Delay(4000).ContinueWith(async _ =>
+        {
+            await InvokeAsync(() =>
+    {
+            RemoveToast(toast.Id);
+        });
+        });
+    }
+
+    private void RemoveToast(int toastId)
+    {
+        var toast = toasts.FirstOrDefault(t => t.Id == toastId);
+        if (toast != null)
+        {
+            toast.IsVisible = false;
+            StateHasChanged();
+
+            // Remove from list after animation
+            Task.Delay(300).ContinueWith(_ =>
+            {
+                InvokeAsync(() =>
+    {
+                toasts.Remove(toast);
+                StateHasChanged();
+            });
+            });
+        }
+    }
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+{
+  
+
+    const long maxFileSize = 10 * 1024 * 1024; // 10MB
+    const int maxFiles = 5;
+
+    try
+    {
+        // Check if files were actually selected
+        if (e.FileCount == 0)
+        {
+          
+            await ShowToast("No Files", "No files were selected.", "error");
+            return;
+        }
+
+        var selectedFiles = e.GetMultipleFiles(maxFiles);
+      
+        // Ensure uploadedFiles is initialized
+        if (uploadedFiles == null)
+        {
+          
+            uploadedFiles = new List<IBrowserFile>();
+        }
+
+        
+
+        int addedCount = 0;
+
+        foreach (var file in selectedFiles)
+        {
+           
+
+            // Validate file size
+            if (file.Size > maxFileSize)
+            {
+              
+                await ShowToast("File Too Large",
+                $"File '{file.Name}' is too large. Maximum size is 10MB.",
+                "error");
+                continue;
+            }
+
+            // Check for duplicates
+            if (uploadedFiles.Any(f => f.Name == file.Name && f.Size == file.Size))
+            {
+             
+                await ShowToast("Duplicate File",
+                $"File '{file.Name}' is already selected.",
+                "error");
+                continue;
+            }
+
+            // Add file to the list
+            uploadedFiles.Add(file);
+            addedCount++;
+          
+        }
+
+       
+
+        // Log each file in the list
+        for (int i = 0; i < uploadedFiles.Count; i++)
+        {
+          
+        }
+
+        if (addedCount > 0)
+        {
+            await ShowToast("Files Added",
+            $"{addedCount} file(s) added successfully.",
+            "success");
+        }
+        else
+        {
+
+        }
+    }
+    catch (Exception ex)
+    {
+      
+        await ShowToast("Upload Error",
+        $"Error selecting files: {ex.Message}",
+        "error");
+    }
+
+    // Force UI update
+   
+    await InvokeAsync(StateHasChanged);
+    
+}
+
+    // Also add this method to check if the UI is rendering correctly
+    private void LogRenderState()
+    {
+
+
+        if (uploadedFiles != null)
+        {
+            foreach (var file in uploadedFiles)
+            {
+
+            }
+        }
+
+    }
+
+    // Add this to your OnInitialized method
+    protected override void OnInitialized()
+    {
+
+
+        // Ensure uploadedFiles is properly initialized
+        if (uploadedFiles == null)
+        {
+            uploadedFiles = new List<IBrowserFile>();
+
+        }
+
+        // Only set default priority if it's not already set
+        if (string.IsNullOrEmpty(ticketModel.Priority))
+        {
+            ticketModel.Priority = "Medium"; // Default priority
+
+        }
+
+
+    }
+
+    private void RemoveFile(IBrowserFile file)
+    {
+        try
+        {
+            uploadedFiles.Remove(file);
+
+            // Show success message
+            _ = ShowToast("File Removed",
+            $"File '{file.Name}' has been removed.",
+            "info");
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _ = ShowToast("Remove Error",
+            $"Error removing file: {ex.Message}",
+            "error");
+        }
+    }
+
+    // Make sure these helper methods are also present and working
+    private string GetFileIcon(string fileName)
+    {
+        var extension = Path.GetExtension(fileName)?.ToLower() ?? "";
+        return extension switch
+        {
+            ".pdf" => "fas fa-file-pdf",
+            ".doc" or ".docx" => "fas fa-file-word",
+            ".jpg" or ".jpeg" or ".png" or ".gif" or ".bmp" or ".webp" => "fas fa-file-image",
+            ".txt" => "fas fa-file-alt",
+            ".zip" or ".rar" => "fas fa-file-archive",
+            ".xls" or ".xlsx" => "fas fa-file-excel",
+            _ => "fas fa-file"
+        };
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private bool IsImageFile(string fileName)
+    {
+        var extension = Path.GetExtension(fileName)?.ToLower();
+        return new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" }.Contains(extension);
+    }
+
+    // Model for the create ticket form
+    public class CreateTicketModel
+    {
+        [Required(ErrorMessage = "Requester name is required")]
+        public string RequesterName { get; set; } = "";
+
+        [Required(ErrorMessage = "Email address is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        public string RequesterEmail { get; set; } = "";
+
+        [Required(ErrorMessage = "Department is required")]
+        public string Department { get; set; } = "";
+
+        [Required(ErrorMessage = "Category is required")]
+        public string Category { get; set; } = "";
+
+        [Required(ErrorMessage = "Subject is required")]
+        [StringLength(200, ErrorMessage = "Subject must be less than 200 characters")]
+        public string Subject { get; set; } = "";
+
+        [Required(ErrorMessage = "Priority is required")]
+        public string Priority { get; set; } = "";
+
+        [Required(ErrorMessage = "Description is required")]
+        [StringLength(2000, MinimumLength = 20, ErrorMessage = "Description must be between 20 and 2000 characters")]
+        public string Description { get; set; } = "";
+    }
+
+    private void CreateAnotherTicket()
+    {
+        // Reset the form to create another ticket
+        lastCreatedTicketId = 0;
+        ticketModel = new CreateTicketModel();
+        uploadedFiles.Clear();
+        StateHasChanged();
+    }
+
+    public class ToastNotification
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string Type { get; set; } = "success"; // success, error, info
+        public bool IsVisible { get; set; } = false;
+    }
+}

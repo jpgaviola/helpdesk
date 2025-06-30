@@ -1,0 +1,2284 @@
+@page "/users"
+@rendermode InteractiveServer
+@using Microsoft.JSInterop
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@using System.ComponentModel.DataAnnotations
+@inject HelpdeskBlazor.Services.IUserService UserService
+@using HelpdeskBlazor.Models
+
+<style>
+    .users-container {
+    padding: 30px 30px 80px 30px; /* Added extra bottom padding */
+    background: #f8f9fa;
+    min-height: calc(100vh - 80px);
+}
+
+    .page-header {
+        background: white;
+        padding: 25px 30px;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        border-left: 4px solid #ff6b35;
+    }
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0A1A28;
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .page-title i {
+        color: #ff6b35;
+        font-size: 24px;
+    }
+
+    .page-subtitle {
+        color: #666;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .users-toolbar {
+        background: white;
+        padding: 20px 25px;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .search-box {
+        position: relative;
+        min-width: 300px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 45px 12px 15px;
+        border: 2px solid #E7EAEE;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #fff;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        font-size: 16px;
+    }
+
+    .filter-dropdown {
+        padding: 10px 15px;
+        border: 2px solid #E7EAEE;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 140px;
+    }
+
+    .filter-dropdown:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    }
+
+    .add-user-btn {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .add-user-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .bulk-actions {
+        background: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+    }
+
+    .bulk-actions.show {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+    .bulk-actions-info {
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .bulk-btn {
+        padding: 8px 15px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #666;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .bulk-btn:hover {
+        background: #f8f9fa;
+        color: #333;
+    }
+
+    .bulk-btn.danger:hover {
+        background: #fff5f5;
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+
+    .users-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .stat-number {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .stat-card.total .stat-number { color: #007bff; }
+    .stat-card.active .stat-number { color: #28a745; }
+    .stat-card.inactive .stat-number { color: #ffc107; }
+    .stat-card.admins .stat-number { color: #ff6b35; }
+
+    .users-table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    overflow: visible; /* Changed from hidden to visible */
+    position: relative;
+}
+
+    .table-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 20px 25px;
+        border-bottom: 1px solid #E7EAEE;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #0A1A28;
+        margin: 0;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .table-action-btn {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #666;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .table-action-btn:hover {
+        background: #f8f9fa;
+        color: #333;
+    }
+
+    .users-table th.center,
+    .users-table td.center {
+        text-align: center;
+    }
+
+    .users-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .users-table th {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: #0A1A28;
+        font-size: 14px;
+        border-bottom: 2px solid #E7EAEE;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .users-table th:hover {
+        background: #e9ecef;
+    }
+
+    .users-table th.sortable:after {
+        content: '';
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 4px solid transparent;
+        border-top: 4px solid #ccc;
+    }
+
+    .users-table th.sortable.asc:after {
+        border-top: 4px solid #ff6b35;
+    }
+
+    .users-table th.sortable.desc:after {
+        border-bottom: 4px solid #ff6b35;
+        border-top: none;
+    }
+
+    .users-table td {
+        padding: 18px 20px;
+        border-bottom: 1px solid #f1f3f4;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    .users-table tr:hover {
+        background: #f8f9fa;
+    }
+
+    .user-checkbox {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(45deg, #ff6b35 0%, #f7931e 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+
+    .user-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: #0A1A28;
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .user-email {
+        color: #666;
+        font-size: 13px;
+        margin: 2px 0 0 0;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-active { background: #d4edda; color: #155724; }
+    .status-inactive { background: #fff3cd; color: #856404; }
+    .status-suspended { background: #f8d7da; color: #721c24; }
+
+    .role-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .role-admin { background: #ffebee; color: #c62828; }
+    .role-user { background: #e8f5e8; color: #2e7d32; }
+    .role-moderator { background: #fff8e1; color: #f57c00; }
+
+    .actions-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .actions-btn {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #666;
+        transition: all 0.3s ease;
+    }
+
+    .actions-btn:hover {
+        background: #e9ecef;
+        color: #333;
+    }
+
+   .actions-menu {
+    position: absolute;
+    top: 100%; /* Default: dropdown opens downward */
+    right: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 160px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+/* NEW: Class for dropdowns that should open upward */
+.actions-menu.drop-up {
+    top: auto;
+    bottom: 100%;
+    transform: translateY(10px);
+}
+
+.actions-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+    .actions-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        color: #666;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 13px;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        transition: all 0.3s ease;
+    }
+
+    .actions-menu-item:hover {
+        background: #f8f9fa;
+        color: #333;
+    }
+
+    .actions-menu-item.danger:hover {
+        background: #fff5f5;
+        color: #dc3545;
+    }
+
+    .actions-menu-item i {
+        width: 14px;
+        font-size: 12px;
+    }
+
+    .dropdown-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999;
+        display: none;
+    }
+
+    .dropdown-overlay.show {
+        display: block;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: #ddd;
+        margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .empty-state p {
+        font-size: 16px;
+        margin-bottom: 25px;
+    }
+
+    .pagination {
+        padding: 20px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #E7EAEE;
+        background: #f8f9fa;
+    }
+
+    .pagination-info {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .pagination-controls {
+        display: flex;
+        gap: 10px;
+    }
+
+    .pagination-btn {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #666;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+        background: #ff6b35;
+        color: white;
+        border-color: #ff6b35;
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* User Detail Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        transform: scale(0.9);
+        transition: all 0.3s ease;
+    }
+
+    .modal-overlay.show .modal-content {
+        transform: scale(1);
+    }
+
+    .modal-header {
+        padding: 20px 25px;
+        border-bottom: 1px solid #E7EAEE;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #0A1A28;
+        margin: 0;
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #999;
+        cursor: pointer;
+        padding: 5px;
+        line-height: 1;
+    }
+
+    .modal-close:hover {
+        color: #666;
+    }
+
+    .modal-body {
+        padding: 25px;
+    }
+
+    .user-detail-section {
+        margin-bottom: 20px;
+    }
+
+    .user-detail-label {
+        font-weight: 600;
+        color: #0A1A28;
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+
+    .user-detail-value {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+
+    /* Mobile Responsive */
+    @@media (max-width: 768px) {
+        .users-container {
+            padding: 20px 15px;
+        }
+
+        .users-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .toolbar-left, .toolbar-right {
+            justify-content: center;
+        }
+
+        .search-box {
+            min-width: 100%;
+        }
+
+        .users-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .users-table-container {
+            overflow-x: auto;
+        }
+
+        .users-table {
+            min-width: 800px;
+        }
+
+        .bulk-actions {
+            flex-wrap: wrap;
+        }
+    }
+
+    .form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: #0A1A28;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.form-input, .form-select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #E7EAEE;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: #fff;
+}
+
+.form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.modal-footer {
+    padding: 20px 25px;
+    
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    border: 2px solid #dee2e6;
+    background: white;
+    color: #666;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: #f8f9fa;
+    color: #333;
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+@@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-footer {
+        flex-direction: column-reverse;
+    }
+    
+    .btn-secondary, .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Toast Notification Styles */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 300px;
+    max-width: 400px;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    pointer-events: auto;
+    border-left: 4px solid;
+}
+
+.toast.show {
+    transform: translateX(0);
+}
+
+.toast.success {
+    border-left-color: #28a745;
+}
+
+.toast.error {
+    border-left-color: #dc3545;
+}
+
+.toast.info {
+    border-left-color: #007bff;
+}
+
+.toast-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.toast.success .toast-icon {
+    background: #28a745;
+}
+
+.toast.error .toast-icon {
+    background: #dc3545;
+}
+
+.toast.info .toast-icon {
+    background: #007bff;
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: 600;
+    color: #0A1A28;
+    font-size: 14px;
+    margin: 0 0 2px 0;
+}
+
+.toast-message {
+    color: #666;
+    font-size: 13px;
+    margin: 0;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toast-close:hover {
+    color: #666;
+}
+
+/* Confirmation Modal Styles */
+.confirm-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 3000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.confirm-modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.confirm-modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+    max-width: 450px;
+    width: 90%;
+    transform: scale(0.9);
+    transition: all 0.3s ease;
+}
+
+.confirm-modal-overlay.show .confirm-modal-content {
+    transform: scale(1);
+}
+
+.confirm-modal-header {
+    padding: 25px 30px 20px 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 1px solid #E7EAEE;
+}
+
+.confirm-modal-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #fff5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #dc3545;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.confirm-modal-text {
+    flex: 1;
+}
+
+.confirm-modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #0A1A28;
+    margin: 0 0 5px 0;
+}
+
+.confirm-modal-message {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.confirm-modal-body {
+    padding: 20px 30px;
+}
+
+.confirm-modal-user-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    border-left: 3px solid #dc3545;
+}
+
+.confirm-modal-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #ff6b35 0%, #f7931e 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.confirm-modal-user-details {
+    flex: 1;
+}
+
+.confirm-modal-user-name {
+    font-weight: 600;
+    color: #0A1A28;
+    margin: 0 0 2px 0;
+    font-size: 14px;
+}
+
+.confirm-modal-user-email {
+    color: #666;
+    font-size: 13px;
+    margin: 0;
+}
+
+.confirm-modal-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    padding: 12px 15px;
+    color: #856404;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.confirm-modal-footer {
+    padding: 20px 30px 25px 30px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: #f8f9fa;
+    border-radius: 0 0 12px 12px;
+}
+
+.btn-cancel {
+    padding: 10px 20px;
+    border: 2px solid #dee2e6;
+    background: white;
+    color: #666;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    background: #f8f9fa;
+    color: #333;
+    border-color: #adb5bd;
+}
+
+.btn-delete {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-delete:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.btn-delete:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+</style>
+
+<div class="users-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-users"></i>
+            User Management
+        </h1>
+        <p class="page-subtitle">Manage system users, roles, and permissions</p>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="users-toolbar">
+        <div class="toolbar-left">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Search users..." @bind="searchTerm" @oninput="OnSearchChanged" />
+                <i class="fas fa-search search-icon"></i>
+            </div>
+            <select class="filter-dropdown" @bind="statusFilter" @bind:after="OnFilterChanged">
+                <option value="">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+                <option value="Suspended">Suspended</option>
+            </select>
+            <select class="filter-dropdown" @bind="roleFilter" @bind:after="OnFilterChanged">
+                <option value="">All Roles</option>
+                <option value="Admin">Admin</option>
+                <option value="User">User</option>
+                <option value="Moderator">Moderator</option>
+            </select>
+        </div>
+        <div class="toolbar-right">
+            <button class="add-user-btn" @onclick="OpenAddUserModal">
+                <i class="fas fa-plus"></i>
+                Add User
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="users-stats">
+        <div class="stat-card total">
+            <div class="stat-number">@GetTotalUsers()</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card active">
+            <div class="stat-number">@GetUsersByStatus("Active")</div>
+            <div class="stat-label">Active Users</div>
+        </div>
+        <div class="stat-card inactive">
+            <div class="stat-number">@GetUsersByStatus("Inactive")</div>
+            <div class="stat-label">Inactive Users</div>
+        </div>
+        <div class="stat-card admins">
+            <div class="stat-number">@GetUsersByRole("Admin")</div>
+            <div class="stat-label">Administrators</div>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="users-table-container">
+        <div class="table-header">
+            <h3 class="table-title">Users List</h3>
+            <div class="table-actions">
+                <button class="table-action-btn" @onclick="ExportUsers">
+                    <i class="fas fa-download"></i>
+                    Export
+                </button>
+                <button class="table-action-btn" @onclick="RefreshUsers">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh
+                </button>
+            </div>
+        </div>
+
+        @if (filteredUsers.Any())
+        {
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th class="center">Name</th>
+                        <th class="center">Role</th>
+                        <th class="center">Status</th>
+                        <th class="center">Department</th>
+                        <th class="center">Last Login</th>
+                        <th class="center">Created Date</th>
+                        <th class="center">Actions</th>
+                    </tr>
+                </thead>
+            <tbody>
+                    @foreach (var user in GetPaginatedUsers())
+                    {
+                        <tr>
+                            <td>
+                                <div class="user-info">
+                                    <div class="user-avatar">@GetUserInitials(user.Name)</div>
+                                    <div class="user-details">
+                                        <div class="user-name">@user.Name</div>
+                                        <div class="user-email">@user.Email</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="center">
+                                <span class="role-badge role-@user.Role.ToLower()">@user.Role</span>
+                            </td>
+                            <td class="center">
+                                <span class="status-badge status-@user.Status.ToLower()">@user.Status</span>
+                            </td>
+                            <td class="center">@user.Department</td>
+                            <td class="center">@(user.LastLogin?.ToString("MMM dd, yyyy") ?? "Never")</td>
+                            <td class="center">@user.CreatedDate.ToString("MMM dd, yyyy")</td>
+                            <td class="center">
+                                <div class="actions-dropdown">
+                                    <button class="actions-btn" @onclick="() => ToggleActionsMenu(user.Id)" @onclick:stopPropagation="true">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="actions-menu @(activeDropdown == user.Id ? "show" : "")">
+                                        <button class="actions-menu-item" @onclick="() => ViewUser(user.Id)" @onclick:stopPropagation="true">
+                                            <i class="fas fa-eye"></i>
+                                            View Details
+                                        </button>
+                                        <button class="actions-menu-item" @onclick="() => EditUser(user.Id)" @onclick:stopPropagation="true">
+                                            <i class="fas fa-edit"></i>
+                                            Edit User
+                                        </button>
+                                        
+                                        @if (user.Status == "Active")
+                                        {
+                                            <button class="actions-menu-item" @onclick="() => DeactivateUser(user.Id)" @onclick:stopPropagation="true">
+                                                <i class="fas fa-pause"></i>
+                                                Deactivate
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="actions-menu-item" @onclick="() => ActivateUser(user.Id)" @onclick:stopPropagation="true">
+                                                <i class="fas fa-play"></i>
+                                                Activate
+                                            </button>
+                                        }
+
+                                        <button class="actions-menu-item danger" @onclick="() => DeleteUser(user.Id)" @onclick:stopPropagation="true">
+                                            <i class="fas fa-trash"></i>
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <div class="pagination-info">
+                    Showing @((currentPage - 1) * pageSize + 1) to @(Math.Min(currentPage * pageSize, filteredUsers.Count)) of @filteredUsers.Count users
+                </div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn" @onclick="PreviousPage" disabled="@(currentPage <= 1)">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button class="pagination-btn" @onclick="NextPage" disabled="@(currentPage >= GetTotalPages())">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h3>No Users Found</h3>
+                <p>@(string.IsNullOrEmpty(searchTerm) ? "There are no users to display." : "No users match your search criteria.")</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- User Detail Modal -->
+<div class="modal-overlay @(showUserModal ? "show" : "")" @onclick="CloseUserModal">
+    <div class="modal-content" @onclick:stopPropagation="true">
+        <div class="modal-header">
+            <h3 class="modal-title">User Details</h3>
+            <button class="modal-close" @onclick="CloseUserModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            @if (selectedUser != null)
+            {
+                <div class="user-detail-section">
+                    <div class="user-info">
+                        <div class="user-avatar" style="width: 60px; height: 60px; font-size: 24px;">@GetUserInitials(selectedUser.Name)</div>
+                        <div class="user-details" style="margin-left: 15px;">
+                            <div class="user-name" style="font-size: 18px; margin-bottom: 5px;">@selectedUser.Name</div>
+                            <div class="user-email" style="font-size: 14px;">@selectedUser.Email</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="user-detail-section">
+                    <div class="user-detail-label">Role</div>
+                    <div class="user-detail-value">
+                        <span class="role-badge role-@selectedUser.Role.ToLower()">@selectedUser.Role</span>
+                    </div>
+                </div>
+
+                <div class="user-detail-section">
+                    <div class="user-detail-label">Status</div>
+                    <div class="user-detail-value">
+                        <span class="status-badge status-@selectedUser.Status.ToLower()">@selectedUser.Status</span>
+                    </div>
+                </div>
+
+                <div class="user-detail-section">
+                    <div class="user-detail-label">Department</div>
+                    <div class="user-detail-value">@selectedUser.Department</div>
+                </div>
+
+                <div class="user-detail-section">
+                    <div class="user-detail-label">Phone</div>
+                    <div class="user-detail-value">@selectedUser.Phone</div>
+                </div>
+
+                <div class="user-detail-section">
+                    <div class="user-detail-label">Last Login</div>
+                    <div class="user-detail-value">@(selectedUser.LastLogin?.ToString("MMMM dd, yyyy 'at' hh:mm tt") ?? "Never logged in")</div>
+                </div>
+
+                <div class="user-detail-section">
+                    <div class="user-detail-label">Created Date</div>
+                    <div class="user-detail-value">@selectedUser.CreatedDate.ToString("MMMM dd, yyyy 'at' hh:mm tt")</div>
+                </div>
+
+                <div class="user-detail-section">
+                    <div class="user-detail-label">Location</div>
+                    <div class="user-detail-value">@selectedUser.Location</div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container">
+    @foreach (var toast in toasts)
+    {
+        <div class="toast @toast.Type @(toast.IsVisible ? "show" : "")">
+            <div class="toast-icon">
+                @if (toast.Type == "success")
+                {
+                    <i class="fas fa-check"></i>
+                }
+                else if (toast.Type == "error")
+                {
+                    <i class="fas fa-times"></i>
+                }
+                else if (toast.Type == "info")
+                {
+                    <i class="fas fa-info"></i>
+                }
+            </div>
+            <div class="toast-content">
+                <div class="toast-title">@toast.Title</div>
+                <div class="toast-message">@toast.Message</div>
+            </div>
+            <button class="toast-close" @onclick="() => RemoveToast(toast.Id)">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    }
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-overlay @(showAddUserModal ? "show" : "")" @onclick="CloseAddUserModal">
+    <div class="modal-content" @onclick:stopPropagation="true" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Add New User</h3>
+            <button class="modal-close" @onclick="CloseAddUserModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <EditForm Model="newUser" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Full Name *</label>
+                        <InputText class="form-input" @bind-Value="newUser.Name" placeholder="Enter full name" />
+                        <ValidationMessage For="() => newUser.Name" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email Address *</label>
+                        <InputText class="form-input" @bind-Value="newUser.Email" placeholder="user@semirarampc.com" />
+                        <ValidationMessage For="() => newUser.Email" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Role *</label>
+                        <InputSelect class="form-select" @bind-Value="newUser.Role">
+                            <option value="">Select Role</option>
+                            <option value="Admin">Admin</option>
+                            <option value="User">User</option>
+                            <option value="Moderator">Moderator</option>
+                        </InputSelect>
+                        <ValidationMessage For="() => newUser.Role" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Department *</label>
+                        <InputSelect class="form-select" @bind-Value="newUser.Department">
+                            <option value="">Select Department</option>
+                            <option value="IT">IT</option>
+                            <option value="HR">HR</option>
+                            <option value="Operations">Operations</option>
+                            <option value="Finance">Finance</option>
+                            <option value="Security">Security</option>
+                            <option value="Facilities">Facilities</option>
+                        </InputSelect>
+                        <ValidationMessage For="() => newUser.Department" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <InputText class="form-input" @bind-Value="newUser.Phone" placeholder="+63 917 XXX XXXX" />
+                        <ValidationMessage For="() => newUser.Phone" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Location</label>
+                        <InputText class="form-input" @bind-Value="newUser.Location" placeholder="City, Country" />
+                        <ValidationMessage For="() => newUser.Location" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Default Password *</label>
+                        <InputText class="form-input" @bind-Value="newUser.Password" 
+                                type="password" placeholder="Set initial password" />
+                        <ValidationMessage For="() => newUser.Password" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <InputSelect class="form-select" @bind-Value="newUser.Status">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" @onclick="CloseAddUserModal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn-primary" disabled="@isSubmitting">
+                        
+                    @if
+                        (isSubmitting)
+                        {
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Creating...</span>                       
+                        }                        
+                    else
+                        {
+                            <i class="fas fa-plus"></i>
+                            <span>Create User</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal-overlay @(showEditUserModal ? "show" : "")" @onclick="CloseEditUserModal">
+    <div class="modal-content" @onclick:stopPropagation="true" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Edit User</h3>
+            <button class="modal-close" @onclick="CloseEditUserModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            @if (editUser != null)
+            {
+                <EditForm Model="editUser" OnValidSubmit="HandleEditSubmit">
+                    <DataAnnotationsValidator />
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Full Name *</label>
+                            <InputText class="form-input" @bind-Value="editUser.Name" placeholder="Enter full name" />
+                            <ValidationMessage For="() => editUser.Name" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email Address *</label>
+                            <InputText class="form-input" @bind-Value="editUser.Email" placeholder="user@semirarampc.com" />
+                            <ValidationMessage For="() => editUser.Email" />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Role *</label>
+                            <InputSelect class="form-select" @bind-Value="editUser.Role">
+                                <option value="">Select Role</option>
+                                <option value="Admin">Admin</option>
+                                <option value="User">User</option>
+                                <option value="Moderator">Moderator</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => editUser.Role" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Department *</label>
+                            <InputSelect class="form-select" @bind-Value="editUser.Department">
+                                <option value="">Select Department</option>
+                                <option value="IT">IT</option>
+                                <option value="HR">HR</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Security">Security</option>
+                                <option value="Facilities">Facilities</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => editUser.Department" />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <InputText class="form-input" @bind-Value="editUser.Phone" placeholder="+63 917 XXX XXXX" />
+                            <ValidationMessage For="() => editUser.Phone" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Location</label>
+                            <InputText class="form-input" @bind-Value="editUser.Location" placeholder="City, Country" />
+                            <ValidationMessage For="() => editUser.Location" />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <InputSelect class="form-select" @bind-Value="editUser.Status">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                            <option value="Suspended">Suspended</option>
+                        </InputSelect>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn-secondary" @onclick="CloseEditUserModal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary" disabled="@isEditSubmitting">
+                            @if (isEditSubmitting)
+                            {
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Updating...</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-save"></i>
+                                <span>Update User</span>
+                            }
+                        </button>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="confirm-modal-overlay @(showDeleteConfirmModal ? "show" : "")" @onclick="CloseDeleteConfirmModal">
+    <div class="confirm-modal-content" @onclick:stopPropagation="true">
+        <div class="confirm-modal-header">
+            <div class="confirm-modal-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="confirm-modal-text">
+                <h3 class="confirm-modal-title">Delete User</h3>
+                <p class="confirm-modal-message">Are you sure you want to delete this user? This action cannot be undone.</p>
+            </div>
+        </div>
+        
+        <div class="confirm-modal-body">
+            @if (userToDelete != null)
+            {
+                <div class="confirm-modal-user-info">
+                    <div class="confirm-modal-avatar">@GetUserInitials(userToDelete.Name)</div>
+                    <div class="confirm-modal-user-details">
+                        <div class="confirm-modal-user-name">@userToDelete.Name</div>
+                        <div class="confirm-modal-user-email">@userToDelete.Email</div>
+                    </div>
+                </div>
+            }
+            
+            <div class="confirm-modal-warning">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>This will permanently remove the user from the system and cannot be recovered.</span>
+            </div>
+        </div>
+        
+        <div class="confirm-modal-footer">
+            <button type="button" class="btn-cancel" @onclick="CloseDeleteConfirmModal">
+                Cancel
+            </button>
+            <button type="button" class="btn-delete" @onclick="ConfirmDeleteUser" disabled="@isDeleting">
+                @if (isDeleting)
+                {
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Deleting...</span>
+                }
+                else
+                {
+                    <i class="fas fa-trash"></i>
+                    <span>Delete User</span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="dropdown-overlay @(activeDropdown != 0 ? "show" : "")" @onclick="CloseActionsMenu" @onclick:stopPropagation="true"></div>
+
+@code {
+    // Database-connected properties
+    private List<User> users = new List<User>();
+    private List<User> filteredUsers = new List<User>();
+    private List<int> selectedUsers = new List<int>();
+    
+    private string searchTerm = "";
+    private string statusFilter = "";
+    private string roleFilter = "";
+    private string sortColumn = "Name";
+    private string sortDirection = "asc";
+    
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int activeDropdown = 0;
+    
+    private bool showUserModal = false;
+    private User? selectedUser = null;
+    private bool showAddUserModal = false;
+    private bool isSubmitting = false;
+    private NewUserModel newUser = new NewUserModel();
+    private bool showEditUserModal = false;
+    private bool isEditSubmitting = false;
+    private EditUserModel? editUser = null;
+
+    private List<ToastNotification> toasts = new List<ToastNotification>();
+    private int toastIdCounter = 0;
+
+    private bool showDeleteConfirmModal = false;
+    private bool isDeleting = false;
+    private User? userToDelete = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsersFromDatabase();
+        FilterAndSortUsers();
+    }
+
+    private async Task LoadUsersFromDatabase()
+    {
+        try
+        {
+            users = await UserService.GetAllUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error loading users: {ex.Message}");
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? "";
+        currentPage = 1;
+        FilterAndSortUsers();
+    }
+
+    private void OnFilterChanged()
+    {
+        currentPage = 1;
+        FilterAndSortUsers();
+    }
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortDirection = sortDirection == "asc" ? "desc" : "asc";
+        }
+        else
+        {
+            sortColumn = column;
+            sortDirection = "asc";
+        }
+        FilterAndSortUsers();
+    }
+
+    private void FilterAndSortUsers()
+    {
+        var query = users.AsQueryable();
+
+        // Apply search filter
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            query = query.Where(u => u.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                                   u.Email.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                                   u.Department.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Apply status filter
+        if (!string.IsNullOrEmpty(statusFilter))
+        {
+            query = query.Where(u => u.Status == statusFilter);
+        }
+
+        // Apply role filter
+        if (!string.IsNullOrEmpty(roleFilter))
+        {
+            query = query.Where(u => u.Role == roleFilter);
+        }
+
+        // Apply sorting
+        query = sortColumn switch
+        {
+            "Name" => sortDirection == "asc" ? query.OrderBy(u => u.Name) : query.OrderByDescending(u => u.Name),
+            "Email" => sortDirection == "asc" ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
+            "Role" => sortDirection == "asc" ? query.OrderBy(u => u.Role) : query.OrderByDescending(u => u.Role),
+            "Status" => sortDirection == "asc" ? query.OrderBy(u => u.Status) : query.OrderByDescending(u => u.Status),
+            "Department" => sortDirection == "asc" ? query.OrderBy(u => u.Department) : query.OrderByDescending(u => u.Department),
+            "LastLogin" => sortDirection == "asc" ? query.OrderBy(u => u.LastLogin) : query.OrderByDescending(u => u.LastLogin),
+            "CreatedDate" => sortDirection == "asc" ? query.OrderBy(u => u.CreatedDate) : query.OrderByDescending(u => u.CreatedDate),
+            _ => query.OrderBy(u => u.Name)
+        };
+
+        filteredUsers = query.ToList();
+    }
+
+    private List<User> GetPaginatedUsers()
+    {
+        return filteredUsers
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private int GetTotalPages()
+    {
+        return (int)Math.Ceiling((double)filteredUsers.Count / pageSize);
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < GetTotalPages())
+        {
+            currentPage++;
+        }
+    }
+
+    private string GetSortClass(string column)
+    {
+        if (sortColumn != column) return "";
+        return sortDirection == "asc" ? "asc" : "desc";
+    }
+
+    private int GetTotalUsers() => users.Count;
+    private int GetUsersByStatus(string status) => users.Count(u => u.Status == status);
+    private int GetUsersByRole(string role) => users.Count(u => u.Role == role);
+
+    private string GetUserInitials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        return parts.Length > 0 ? parts[0][0].ToString().ToUpper() : "?";
+    }
+
+    // Selection methods
+    private void ToggleUserSelection(int userId, bool isSelected)
+    {
+        if (isSelected)
+        {
+            if (!selectedUsers.Contains(userId))
+                selectedUsers.Add(userId);
+        }
+        else
+        {
+            selectedUsers.Remove(userId);
+        }
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs e)
+    {
+        bool selectAll = (bool)(e.Value ?? false);
+        
+        if (selectAll)
+        {
+            selectedUsers = GetPaginatedUsers().Select(u => u.Id).ToList();
+        }
+        else
+        {
+            selectedUsers.Clear();
+        }
+    }
+
+    private bool IsAllSelected()
+    {
+        var currentPageIds = GetPaginatedUsers().Select(u => u.Id);
+        return currentPageIds.Any() && currentPageIds.All(id => selectedUsers.Contains(id));
+    }
+
+    private void ClearSelection()
+    {
+        selectedUsers.Clear();
+    }
+
+    // Dropdown methods
+
+    private void ToggleActionsMenu(int userId)
+    {
+        activeDropdown = activeDropdown == userId ? 0 : userId;
+        StateHasChanged();
+    }
+
+    private void CloseActionsMenu()
+    {
+        activeDropdown = 0;
+        StateHasChanged();
+    }
+
+    // User action methods
+    private void ViewUser(int userId)
+    {
+        CloseActionsMenu();
+        selectedUser = users.FirstOrDefault(u => u.Id == userId);
+        showUserModal = true;
+    }
+
+    private void CloseUserModal()
+    {
+        showUserModal = false;
+        selectedUser = null;
+    }
+
+    private async Task EditUser(int userId)
+    {
+        CloseActionsMenu();
+        try
+        {
+            var user = await UserService.GetUserByIdAsync(userId);
+            if (user != null)
+            {
+                editUser = new EditUserModel
+                {
+                    Id = user.Id,
+                    Name = user.Name,
+                    Email = user.Email,
+                    Role = user.Role,
+                    Status = user.Status,
+                    Department = user.Department,
+                    Phone = user.Phone ?? "",
+                    Location = user.Location ?? ""
+                };
+                showEditUserModal = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error loading user: {ex.Message}");
+        }
+    }
+
+    private void CloseEditUserModal()
+    {
+        showEditUserModal = false;
+        editUser = null;
+        isEditSubmitting = false;
+    }
+
+    private async Task HandleEditSubmit()
+    {
+        if (editUser == null) return;
+        
+        isEditSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var userToUpdate = await UserService.GetUserByIdAsync(editUser.Id);
+            if (userToUpdate != null)
+            {
+                userToUpdate.Name = editUser.Name;
+                userToUpdate.Email = editUser.Email;
+                userToUpdate.Role = editUser.Role;
+                userToUpdate.Status = editUser.Status;
+                userToUpdate.Department = editUser.Department;
+                userToUpdate.Phone = editUser.Phone;
+                userToUpdate.Location = editUser.Location;
+                userToUpdate.ModifiedDate = DateTime.Now;
+
+                await UserService.UpdateUserAsync(userToUpdate);
+                await LoadUsersFromDatabase();
+                FilterAndSortUsers();
+                
+                CloseEditUserModal();
+                await ShowToast("Success!", $"User '{userToUpdate.Name}' has been updated successfully!", "success");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Error updating user: {ex.Message}", "error");
+        }
+        finally
+        {
+            isEditSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ResetPassword(int userId)
+    {
+        CloseActionsMenu();
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Reset password for user ID {userId}?");
+        if (confirmed)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Password reset email sent!");
+        }
+    }
+
+    private async Task ActivateUser(int userId)
+    {
+        CloseActionsMenu();
+        try
+        {
+            var user = users.FirstOrDefault(u => u.Id == userId);
+            if (user != null)
+            {
+                user.Status = "Active";
+                await UserService.UpdateUserAsync(user);
+                FilterAndSortUsers();
+                StateHasChanged();
+                await ShowToast("Success!", $"User '{user.Name}' has been activated successfully!", "success");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Error activating user: {ex.Message}", "error");
+        }
+    }
+
+    private async Task DeactivateUser(int userId)
+    {
+        CloseActionsMenu();
+        try
+        {
+            var user = users.FirstOrDefault(u => u.Id == userId);
+            if (user != null)
+            {
+                user.Status = "Inactive";
+                await UserService.UpdateUserAsync(user);
+                FilterAndSortUsers();
+                StateHasChanged();
+                await ShowToast("Success!", $"User '{user.Name}' has been deactivated successfully!", "success");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Error deactivating user: {ex.Message}", "error");
+        }
+    }
+
+    private void DeleteUser(int userId)
+    {
+        CloseActionsMenu();
+        userToDelete = users.FirstOrDefault(u => u.Id == userId);
+        if (userToDelete != null)
+        {
+            showDeleteConfirmModal = true;
+        }
+    }
+
+    private void CloseDeleteConfirmModal()
+    {
+        showDeleteConfirmModal = false;
+        userToDelete = null;
+        isDeleting = false;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDeleteUser()
+    {
+        if (userToDelete == null) return;
+        
+        isDeleting = true;
+        StateHasChanged();
+
+        try
+        {
+            await UserService.DeleteUserAsync(userToDelete.Id);
+            
+            // Store the name before clearing userToDelete
+            var deletedUserName = userToDelete.Name;
+            
+            await LoadUsersFromDatabase();
+            FilterAndSortUsers();
+            selectedUsers.Remove(userToDelete.Id);
+            
+            CloseDeleteConfirmModal();
+            await ShowToast("Success!", $"User '{deletedUserName}' has been deleted successfully!", "success");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Error deleting user: {ex.Message}", "error");
+        }
+        finally
+        {
+            isDeleting = false;
+            StateHasChanged();
+        }
+    }
+
+    // Bulk action methods
+    private async Task BulkActivate()
+    {
+        try
+        {
+            foreach (var userId in selectedUsers)
+            {
+                var user = users.FirstOrDefault(u => u.Id == userId);
+                if (user != null)
+                {
+                    user.Status = "Active";
+                    await UserService.UpdateUserAsync(user);
+                }
+            }
+            await LoadUsersFromDatabase();
+            FilterAndSortUsers();
+            ClearSelection();
+            await ShowToast("Success!", $"{selectedUsers.Count} user(s) have been activated successfully!", "success");
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Error activating users: {ex.Message}", "error");
+        }
+    }
+
+    private async Task BulkDeactivate()
+    {
+        try
+        {
+            foreach (var userId in selectedUsers)
+            {
+                var user = users.FirstOrDefault(u => u.Id == userId);
+                if (user != null)
+                {
+                    user.Status = "Inactive";
+                    await UserService.UpdateUserAsync(user);
+                }
+            }
+            await LoadUsersFromDatabase();
+            FilterAndSortUsers();
+            ClearSelection();
+            await ShowToast("Success!", $"{selectedUsers.Count} user(s) have been deactivated successfully!", "success");
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Error deactivating users: {ex.Message}", "error");
+        }
+    }
+
+    private async Task BulkDelete()
+    {
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete {selectedUsers.Count} user(s)? This action cannot be undone.");
+        if (confirmed)
+        {
+            try
+            {
+                foreach (var userId in selectedUsers)
+                {
+                    await UserService.DeleteUserAsync(userId);
+                }
+                await LoadUsersFromDatabase();
+                ClearSelection();
+                FilterAndSortUsers();
+                StateHasChanged();
+                await ShowToast("Success!", $"{selectedUsers.Count} user(s) have been deleted successfully!", "success");
+            }
+            catch (Exception ex)
+            {
+                await ShowToast("Error", $"Error deleting users: {ex.Message}", "error");
+            }
+        }
+    }
+
+    // Other methods
+    private void OpenAddUserModal()
+    {
+        newUser = new NewUserModel(); // Reset the form
+        showAddUserModal = true;
+    }
+
+    private void CloseAddUserModal()
+    {
+        showAddUserModal = false;
+        newUser = new NewUserModel(); // Reset the form
+        isSubmitting = false;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            // Create new user via database
+            var user = new User
+            {
+                Name = newUser.Name,
+                Email = newUser.Email,
+                Role = newUser.Role,
+                Status = newUser.Status,
+                Department = newUser.Department,
+                Phone = newUser.Phone ?? "",
+                Location = newUser.Location ?? "",
+                PasswordHash = newUser.Password, // For now, store plain text (we'll hash it later)
+                CreatedDate = DateTime.Now,
+                LastLogin = null
+            };
+
+            // Save to database
+            await UserService.CreateUserAsync(user);
+            
+            // Reload users from database
+            await LoadUsersFromDatabase();
+            FilterAndSortUsers();
+            
+            // Close modal and show success toast
+            CloseAddUserModal();
+            await ShowToast("Success!", $"User '{user.Name}' has been created!", "success");
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Error creating user: {ex.Message}", "error");
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportUsers()
+    {
+        await JSRuntime.InvokeVoidAsync("alert", "Export functionality to be implemented");
+    }
+
+    private async Task RefreshUsers()
+    {
+        await LoadUsersFromDatabase();
+        FilterAndSortUsers();
+        await ShowToast("Info", "Users list has been refreshed!", "info");
+    }
+
+    private async Task ShowToast(string title, string message, string type = "success")
+    {
+        var toast = new ToastNotification
+        {
+            Id = ++toastIdCounter,
+            Title = title,
+            Message = message,
+            Type = type,
+            IsVisible = false
+        };
+
+        toasts.Add(toast);
+        StateHasChanged();
+
+        // Show toast with slight delay for animation
+        await Task.Delay(100);
+        toast.IsVisible = true;
+        StateHasChanged();
+
+        // Auto-remove after 4 seconds
+        _ = Task.Delay(4000).ContinueWith(async _ =>
+        {
+            await InvokeAsync(() =>
+            {
+                RemoveToast(toast.Id);
+            });
+        });
+    }
+
+    private void RemoveToast(int toastId)
+    {
+        var toast = toasts.FirstOrDefault(t => t.Id == toastId);
+        if (toast != null)
+        {
+            toast.IsVisible = false;
+            StateHasChanged();
+
+            // Remove from list after animation
+            Task.Delay(300).ContinueWith(_ =>
+            {
+                InvokeAsync(() =>
+                {
+                    toasts.Remove(toast);
+                    StateHasChanged();
+                });
+            });
+        }
+    }
+
+    // Model classes - ONLY DEFINE ONCE
+    public class NewUserModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        [StringLength(100, ErrorMessage = "Name must be less than 100 characters")]
+        public string Name { get; set; } = "";
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Role is required")]
+        public string Role { get; set; } = "";
+
+        [Required(ErrorMessage = "Department is required")]
+        public string Department { get; set; } = "";
+
+        [Phone(ErrorMessage = "Please enter a valid phone number")]
+        public string? Phone { get; set; }
+
+        public string? Location { get; set; }
+
+        public string Status { get; set; } = "Active";
+
+        [Required(ErrorMessage = "Password is required")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
+        public string Password { get; set; } = "";
+    }
+
+    public class EditUserModel
+    {
+        public int Id { get; set; }
+        
+        [Required(ErrorMessage = "Name is required")]
+        [StringLength(100, ErrorMessage = "Name must be less than 100 characters")]
+        public string Name { get; set; } = "";
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "Role is required")]
+        public string Role { get; set; } = "";
+
+        [Required(ErrorMessage = "Department is required")]
+        public string Department { get; set; } = "";
+
+        [Phone(ErrorMessage = "Please enter a valid phone number")]
+        public string? Phone { get; set; }
+
+        public string? Location { get; set; }
+
+        [Required(ErrorMessage = "Status is required")]
+        public string Status { get; set; } = "Active";
+    }
+
+    public class ToastNotification
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string Type { get; set; } = "success"; // success, error, info
+        public bool IsVisible { get; set; } = false;
+    }
+}

@@ -1,0 +1,167 @@
+using Microsoft.EntityFrameworkCore;
+using HelpdeskBlazor.Data;
+using HelpdeskBlazor.Models;
+
+namespace HelpdeskBlazor.Services
+{
+    public class TicketService : ITicketService
+    {
+        private readonly HelpdeskDbContext _context;
+
+        public TicketService(HelpdeskDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<List<Ticket>> GetAllTicketsAsync()
+        {
+            return await _context.Tickets
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.CreatedByUser)
+                .Where(t => !t.IsDeleted)
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<Ticket?> GetTicketByIdAsync(int id)
+        {
+            return await _context.Tickets
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Attachments)
+                .Include(t => t.Comments)
+                    .ThenInclude(c => c.CreatedByUser)
+                .Where(t => t.Id == id && !t.IsDeleted)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<Ticket> CreateTicketAsync(Ticket ticket)
+        {
+            ticket.CreatedDate = DateTime.Now;
+            ticket.IsDeleted = false;
+            
+            _context.Tickets.Add(ticket);
+            await _context.SaveChangesAsync();
+            return ticket;
+        }
+
+        public async Task<Ticket> UpdateTicketAsync(Ticket ticket)
+        {
+            ticket.ModifiedDate = DateTime.Now;
+            
+            _context.Tickets.Update(ticket);
+            await _context.SaveChangesAsync();
+            return ticket;
+        }
+
+        public async Task<bool> DeleteTicketAsync(int id)
+        {
+            var ticket = await GetTicketByIdAsync(id);
+            if (ticket == null) return false;
+
+            ticket.IsDeleted = true;
+            ticket.ModifiedDate = DateTime.Now;
+            
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<List<Ticket>> GetTicketsByStatusAsync(string status)
+        {
+            return await _context.Tickets
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.CreatedByUser)
+                .Where(t => !t.IsDeleted && t.Status == status)
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<Ticket>> GetTicketsByPriorityAsync(string priority)
+        {
+            return await _context.Tickets
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.CreatedByUser)
+                .Where(t => !t.IsDeleted && t.Priority == priority)
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<Ticket>> GetTicketsByUserAsync(int userId)
+        {
+            return await _context.Tickets
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.CreatedByUser)
+                .Where(t => !t.IsDeleted && (t.AssignedToUserId == userId || t.CreatedBy == userId))
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<List<Ticket>> SearchTicketsAsync(string searchTerm)
+        {
+            if (string.IsNullOrEmpty(searchTerm))
+                return await GetAllTicketsAsync();
+
+            return await _context.Tickets
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.CreatedByUser)
+                .Where(t => !t.IsDeleted && 
+                    (t.Subject.Contains(searchTerm) || 
+                     t.Description.Contains(searchTerm) ||
+                     t.RequesterName.Contains(searchTerm) ||
+                     t.RequesterEmail.Contains(searchTerm)))
+                .OrderByDescending(t => t.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<Ticket> AssignTicketAsync(int ticketId, int userId)
+        {
+            var ticket = await GetTicketByIdAsync(ticketId);
+            if (ticket == null) throw new ArgumentException("Ticket not found");
+
+            ticket.AssignedToUserId = userId;
+            ticket.ModifiedDate = DateTime.Now;
+            
+            if (ticket.Status == "Open")
+                ticket.Status = "In Progress";
+
+            await _context.SaveChangesAsync();
+            return ticket;
+        }
+
+        public async Task<Ticket> ChangeTicketStatusAsync(int ticketId, string status)
+        {
+            var ticket = await GetTicketByIdAsync(ticketId);
+            if (ticket == null) throw new ArgumentException("Ticket not found");
+
+            ticket.Status = status;
+            ticket.ModifiedDate = DateTime.Now;
+
+            if (status == "Resolved")
+                ticket.ResolvedDate = DateTime.Now;
+            else if (status == "Closed")
+                ticket.ClosedDate = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return ticket;
+        }
+
+        public async Task<TicketAttachment> AddAttachmentAsync(TicketAttachment attachment)
+        {
+            attachment.UploadedDate = DateTime.Now;
+            
+            _context.TicketAttachments.Add(attachment);
+            await _context.SaveChangesAsync();
+            return attachment;
+        }
+
+        public async Task<TicketComment> AddCommentAsync(TicketComment comment)
+        {
+            comment.CreatedDate = DateTime.Now;
+            comment.IsDeleted = false;
+            
+            _context.TicketComments.Add(comment);
+            await _context.SaveChangesAsync();
+            return comment;
+        }
+    }
+}

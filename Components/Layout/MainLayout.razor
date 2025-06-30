@@ -1,0 +1,55 @@
+@inherits LayoutComponentBase
+@using HelpdeskBlazor.Components.Layout
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .app-container {
+        background: #F8F9FA;
+        color: #0A1A28;
+        min-height: 100vh;
+    }
+
+    .main-wrapper {
+        display: flex;
+        margin-top: 80px; /* Match header height exactly */
+    }
+
+    .main-content {
+        margin-left: 250px; /* Account for sidebar width */
+        padding: 0; /* Remove padding - let individual pages handle their own */
+        flex: 1;
+        max-width: calc(100vw - 250px);
+        min-height: calc(100vh - 80px); /* Updated to match header height */
+        background: #f8f9fa;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .main-wrapper {
+            margin-top: 80px; /* Ensure header height is consistent */
+        }
+        
+        .main-content {
+            margin-left: 0;
+            padding: 0;
+            max-width: 100vw;
+            min-height: calc(100vh - 80px);
+        }
+    }
+</style>
+
+<div class="app-container">
+    <Header @rendermode="InteractiveServer" />
+    <div class="main-wrapper">
+        <Sidebar @rendermode="InteractiveServer" />
+        <main class="main-content">
+            @Body
+        </main>
+    </div>
+</div>

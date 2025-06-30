@@ -1,0 +1,1457 @@
+@page "/tickets"
+@rendermode InteractiveServer
+@using Microsoft.JSInterop
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject HelpdeskBlazor.Services.ITicketService TicketService
+@using HelpdeskBlazor.Models
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+
+<style>
+    .tickets-container {
+        margin-left: 0;
+        padding: 30px 30px 80px 30px;
+        background: #f8f9fa;
+        min-height: calc(100vh - 80px);
+    }
+
+    .page-header {
+        background: white;
+        padding: 25px 30px;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        border-left: 4px solid #ff6b35;
+    }
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0A1A28;
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .page-title i {
+        color: #ff6b35;
+        font-size: 24px;
+    }
+
+    .page-subtitle {
+        color: #666;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .tickets-toolbar {
+        background: white;
+        padding: 20px 25px;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .toolbar-left {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .toolbar-right {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .search-box {
+        position: relative;
+        min-width: 300px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 45px 12px 15px;
+        border: 2px solid #E7EAEE;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #fff;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        font-size: 16px;
+    }
+
+    .filter-dropdown {
+        padding: 10px 15px;
+        border: 2px solid #E7EAEE;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 140px;
+    }
+
+    .filter-dropdown:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    }
+
+    .create-ticket-btn {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        color: white;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .create-ticket-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .tickets-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+
+    .stat-number {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .stat-label {
+        font-size: 14px;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .stat-card.total .stat-number { color: #007bff; }
+    .stat-card.open .stat-number { color: #28a745; }
+    .stat-card.pending .stat-number { color: #ffc107; }
+    .stat-card.closed .stat-number { color: #6c757d; }
+
+    .tickets-table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        overflow: visible;
+        position: relative;
+    }
+
+    .table-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 20px 25px;
+        border-bottom: 1px solid #E7EAEE;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .table-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #0A1A28;
+        margin: 0;
+    }
+
+    .tickets-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .tickets-table th {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: #0A1A28;
+        font-size: 14px;
+        border-bottom: 2px solid #E7EAEE;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .tickets-table th.center,
+    .tickets-table td.center {
+        text-align: center;
+    }
+
+    .tickets-table th:hover {
+        background: #e9ecef;
+    }
+
+    .tickets-table td {
+        padding: 18px 20px;
+        border-bottom: 1px solid #f1f3f4;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    .tickets-table tr:hover {
+        background: #f8f9fa;
+    }
+
+    .ticket-id {
+        font-weight: 600;
+        color: #ff6b35;
+        text-decoration: none;
+    }
+
+    .ticket-subject {
+        font-weight: 500;
+        color: #0A1A28;
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-open { background: #d4edda; color: #155724; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-closed { background: #f8d7da; color: #721c24; }
+    .status-resolved { background: #d1ecf1; color: #0c5460; }
+
+    .priority-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .priority-high { background: #ffebee; color: #c62828; }
+    .priority-medium { background: #fff8e1; color: #f57c00; }
+    .priority-low { background: #e8f5e8; color: #2e7d32; }
+
+    .actions-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .actions-btn {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 8px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #666;
+        transition: all 0.3s ease;
+    }
+
+    .actions-btn:hover {
+        background: #e9ecef;
+        color: #333;
+    }
+
+   .actions-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 150px;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+}
+
+.actions-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+    .actions-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 15px;
+        color: #666;
+        text-decoration: none;
+        cursor: pointer;
+        font-size: 13px;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        transition: all 0.3s ease;
+    }
+
+    .actions-menu-item:hover {
+        background: #f8f9fa;
+        color: #333;
+    }
+
+    .actions-menu-item.danger:hover {
+        background: #fff5f5;
+        color: #dc3545;
+    }
+
+    .actions-menu-item i {
+        width: 14px;
+        font-size: 12px;
+    }
+
+    .dropdown-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999;
+        display: none;
+    }
+
+    .dropdown-overlay.show {
+        display: block;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: #ddd;
+        margin-bottom: 20px;
+    }
+
+    .empty-state h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .empty-state p {
+        font-size: 16px;
+        margin-bottom: 25px;
+    }
+
+    .pagination {
+        padding: 20px 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #E7EAEE;
+        background: #f8f9fa;
+    }
+
+    .pagination-info {
+        font-size: 14px;
+        color: #666;
+    }
+
+    .pagination-controls {
+        display: flex;
+        gap: 10px;
+    }
+
+    .pagination-btn {
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        background: white;
+        color: #666;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+        background: #ff6b35;
+        color: white;
+        border-color: #ff6b35;
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Mobile Responsive */
+    @@media (max-width: 768px) {
+        .tickets-container {
+            padding: 20px 15px;
+        }
+
+        .tickets-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .toolbar-left, .toolbar-right {
+            justify-content: center;
+        }
+
+        .search-box {
+            min-width: 100%;
+        }
+
+        .tickets-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .tickets-table-container {
+            overflow-x: auto;
+            overflow-y: visible;
+        }
+
+        .tickets-table {
+            min-width: 800px;
+        }
+    }
+
+    /* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-width: 700px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    transform: scale(0.9);
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.show .modal-content {
+    transform: scale(1);
+}
+
+.modal-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #E7EAEE;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #0A1A28;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    color: #999;
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: #666;
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-weight: 600;
+    color: #0A1A28;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.form-label.required::after {
+    content: " *";
+    color: #dc3545;
+}
+
+.form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #E7EAEE;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    background: #fff;
+    font-family: inherit;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 120px;
+}
+
+.form-select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 12px center;
+    background-repeat: no-repeat;
+    background-size: 16px;
+    padding-right: 40px;
+    appearance: none;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.modal-footer {
+    padding: 20px 25px;
+    border-top: 1px solid #E7EAEE;
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    background: #f8f9fa;
+}
+
+.btn {
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+    color: white;
+    text-decoration: none;
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.loading-spinner {
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    animation: spin 1s linear infinite;
+}
+
+@@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.validation-error {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+}
+
+@@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-footer {
+        flex-direction: column-reverse;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+.expand-btn {
+    background: none;
+    border: none;
+    color: #ff6b35;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.expand-btn:hover {
+    background: #fff8f5;
+}
+
+.expand-btn.expanded {
+    transform: rotate(90deg);
+}
+
+.ticket-details-row {
+    display: none;
+}
+
+.ticket-details-row.show {
+    display: table-row;
+}
+
+.ticket-details-content {
+    padding: 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #E7EAEE;
+}
+
+.detail-section {
+    margin-bottom: 15px;
+}
+
+.detail-label {
+    font-weight: 600;
+    color: #0A1A28;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.detail-value {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 15px;
+}
+
+.description-section {
+    grid-column: 1 / -1;
+}
+</style>
+
+<div class="tickets-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-ticket-alt"></i>
+            All Tickets
+        </h1>
+        <p class="page-subtitle">Manage and track all support tickets</p>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="tickets-toolbar">
+        <div class="toolbar-left">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Search tickets..." @bind="searchTerm" @oninput="OnSearchChanged" />
+                <i class="fas fa-search search-icon"></i>
+            </div>
+            <select class="filter-dropdown" @bind="statusFilter" @bind:after="OnFilterChanged">
+                <option value="">All Status</option>
+                <option value="Open">Open</option>
+                <option value="Pending">Pending</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+            </select>
+            <select class="filter-dropdown" @bind="priorityFilter" @bind:after="OnFilterChanged">
+                <option value="">All Priority</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="tickets-stats">
+        <div class="stat-card total">
+            <div class="stat-number">@GetTotalTickets()</div>
+            <div class="stat-label">Total Tickets</div>
+        </div>
+        <div class="stat-card open">
+            <div class="stat-number">@GetTicketsByStatus("Open")</div>
+            <div class="stat-label">Open Tickets</div>
+        </div>
+        <div class="stat-card pending">
+            <div class="stat-number">@GetTicketsByStatus("Pending")</div>
+            <div class="stat-label">Pending Tickets</div>
+        </div>
+        <div class="stat-card closed">
+            <div class="stat-number">@GetTicketsByStatus("Closed")</div>
+            <div class="stat-label">Closed Tickets</div>
+        </div>
+    </div>
+
+    <!-- Tickets Table -->
+    <div class="tickets-table-container">
+        <div class="table-header">
+            <h3 class="table-title">Tickets List</h3>
+        </div>
+
+        @if (filteredTickets.Any())
+        {
+            <table class="tickets-table">
+                <thead>
+                    <tr>
+                        <th class="center" style="width: 40px;"></th>
+                        <th class="center">ID</th>
+                        <th class="center">Subject</th>
+                        <th class="center">Status</th>
+                        <th class="center">Priority</th>
+                        <th class="center">Requester</th>
+                        <th class="center">Assigned To</th>
+                        <th class="center">Created</th>
+                        <th class="center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var ticket in GetPaginatedTickets())
+{
+    <!-- Main ticket row -->
+    <tr>
+        <td class="center">
+            <button class="expand-btn @(expandedTickets.Contains(ticket.Id) ? "expanded" : "")" 
+                    @onclick="() => ToggleTicketDetails(ticket.Id)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </td>
+        <td class="center">
+            <a class="ticket-id">#@ticket.Id</a>
+        </td>
+        <td class="center">
+            <div class="ticket-subject" title="@ticket.Subject">@ticket.Subject</div>
+        </td>
+        <td class="center">
+            <span class="status-badge status-@ticket.Status.ToLower()">@ticket.Status</span>
+        </td>
+        <td class="center">
+            <span class="priority-badge priority-@ticket.Priority.ToLower()">@ticket.Priority</span>
+        </td>
+        <td class="center">@ticket.RequesterName</td>
+        <td class="center">@(ticket.AssignedToUser?.Email ?? "Unassigned")</td>
+        <td class="center">@ticket.CreatedDate.ToString("MMM dd, yyyy")</td>
+        <td class="center">
+            <div class="actions-dropdown">
+                <button class="actions-btn" @onclick="() => ToggleActionsMenu(ticket.Id)" @onclick:stopPropagation="true">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="actions-menu @(activeDropdown == ticket.Id ? "show" : "")">
+                    <button class="actions-menu-item" @onclick="() => EditTicket(ticket.Id)" @onclick:stopPropagation="true">
+                        <i class="fas fa-edit"></i>
+                        Edit Ticket
+                    </button>
+                    <button class="actions-menu-item" @onclick="() => AssignTicket(ticket.Id)" @onclick:stopPropagation="true">
+                        <i class="fas fa-user-plus"></i>
+                        Assign
+                    </button>
+
+                    <button class="actions-menu-item danger" @onclick="() => DeleteTicket(ticket.Id)" @onclick:stopPropagation="true">
+                        <i class="fas fa-trash"></i>
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <!-- Expandable details row -->
+    <tr class="ticket-details-row @(expandedTickets.Contains(ticket.Id) ? "show" : "")">
+        <td colspan="9">
+            <div class="ticket-details-content">
+                <div class="detail-grid">
+                    <div class="detail-section">
+                        <div class="detail-label">Department</div>
+                        <div class="detail-value">@ticket.Department</div>
+                    </div>
+                    <div class="detail-section">
+                        <div class="detail-label">Category</div>
+                        <div class="detail-value">@ticket.Category</div>
+                    </div>
+                    <div class="detail-section">
+                        <div class="detail-label">Requester Email</div>
+                        <div class="detail-value">@ticket.RequesterEmail</div>
+                    </div>
+                    <div class="detail-section">
+                        <div class="detail-label">Created Date</div>
+                        <div class="detail-value">@ticket.CreatedDate.ToString("MMMM dd, yyyy 'at' hh:mm tt")</div>
+                    </div>
+                </div>
+                <div class="detail-section description-section">
+                    <div class="detail-label">Description</div>
+                    <div class="detail-value">@ticket.Description</div>
+                </div>
+                @if (!string.IsNullOrEmpty(ticket.Resolution))
+                {
+                    <div class="detail-section description-section">
+                        <div class="detail-label">Resolution</div>
+                        <div class="detail-value">@ticket.Resolution</div>
+                    </div>
+                }
+            </div>
+        </td>
+    </tr>
+}
+                </tbody>
+            </table>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <div class="pagination-info">
+                    Showing @((currentPage - 1) * pageSize + 1) to @(Math.Min(currentPage * pageSize, filteredTickets.Count)) of @filteredTickets.Count tickets
+                </div>
+                <div class="pagination-controls">
+                    <button class="pagination-btn" @onclick="PreviousPage" disabled="@(currentPage <= 1)">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button class="pagination-btn" @onclick="NextPage" disabled="@(currentPage >= GetTotalPages())">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h3>No Tickets Found</h3>
+                <p>@(string.IsNullOrEmpty(searchTerm) ? "There are no tickets to display." : "No tickets match your search criteria.")</p>
+            </div>
+        }
+    </div>
+
+    <!-- Edit Ticket Modal -->
+<div class="modal-overlay @(showEditModal ? "show" : "")" @onclick="CloseEditModal">
+    <div class="modal-content" @onclick:stopPropagation="true">
+        <div class="modal-header">
+            <h3 class="modal-title">Edit Ticket #@(editTicketModel?.Id ?? 0)</h3>
+            <button class="modal-close" @onclick="CloseEditModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        @if (editTicketModel != null)
+        {
+            <EditForm Model="editTicketModel" OnValidSubmit="HandleEditSubmit">
+                <DataAnnotationsValidator />
+                
+                <div class="modal-body">
+                    <!-- Basic Information Row -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">Requester Name</label>
+                            <InputText @bind-Value="editTicketModel.RequesterName" class="form-input" />
+                            <ValidationMessage For="@(() => editTicketModel.RequesterName)" class="error-message" />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Email Address</label>
+                            <InputText @bind-Value="editTicketModel.RequesterEmail" class="form-input" type="email" />
+                            <ValidationMessage For="@(() => editTicketModel.RequesterEmail)" class="error-message" />
+                        </div>
+                    </div>
+
+                    <!-- Department and Category Row -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">Department</label>
+                            <InputSelect @bind-Value="editTicketModel.Department" class="form-select">
+                                <option value="">Select Department</option>
+                                <option value="IT">Information Technology</option>
+                                <option value="HR">Human Resources</option>
+                                <option value="Finance">Finance</option>
+                                <option value="Operations">Operations</option>
+                                <option value="Facilities">Facilities</option>
+                                <option value="Security">Security</option>
+                            </InputSelect>
+                            <ValidationMessage For="@(() => editTicketModel.Department)" class="error-message" />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Category</label>
+                            <InputSelect @bind-Value="editTicketModel.Category" class="form-select">
+                                <option value="">Select Category</option>
+                                <option value="Hardware">Hardware Issue</option>
+                                <option value="Software">Software Issue</option>
+                                <option value="Network">Network/Connectivity</option>
+                                <option value="Account">Account Access</option>
+                                <option value="Request">Service Request</option>
+                                <option value="Other">Other</option>
+                            </InputSelect>
+                            <ValidationMessage For="@(() => editTicketModel.Category)" class="error-message" />
+                        </div>
+                    </div>
+
+                    <!-- Subject -->
+                    <div class="form-group">
+                        <label class="form-label required">Subject</label>
+                        <InputText @bind-Value="editTicketModel.Subject" class="form-input" />
+                        <ValidationMessage For="@(() => editTicketModel.Subject)" class="error-message" />
+                    </div>
+
+                    <!-- Priority and Status Row -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">Priority</label>
+                            <InputSelect @bind-Value="editTicketModel.Priority" class="form-select">
+                                <option value="">Select Priority</option>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                            </InputSelect>
+                            <ValidationMessage For="@(() => editTicketModel.Priority)" class="error-message" />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label required">Status</label>
+                            <InputSelect @bind-Value="editTicketModel.Status" class="form-select">
+                                <option value="Open">Open</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Resolved">Resolved</option>
+                                <option value="Closed">Closed</option>
+                            </InputSelect>
+                            <ValidationMessage For="@(() => editTicketModel.Status)" class="error-message" />
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group">
+                        <label class="form-label required">Description</label>
+                        <InputTextArea @bind-Value="editTicketModel.Description" class="form-textarea" 
+                            placeholder="Provide detailed information about the issue..." />
+                        <ValidationMessage For="@(() => editTicketModel.Description)" class="error-message" />
+                    </div>
+
+                    <!-- Resolution (only show if status is Resolved or Closed) -->
+                    @if (editTicketModel.Status == "Resolved" || editTicketModel.Status == "Closed")
+                    {
+                        <div class="form-group">
+                            <label class="form-label">Resolution</label>
+                            <InputTextArea @bind-Value="editTicketModel.Resolution" class="form-textarea" 
+                                placeholder="Describe how the issue was resolved..." />
+                        </div>
+                    }
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseEditModal">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" disabled="@isEditSubmitting">
+                        @if (isEditSubmitting)
+                        {
+                            <div class="loading-spinner"></div>
+                            <span>Updating...</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-save"></i>
+                            <span>Update Ticket</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        }
+    </div>
+</div>
+</div>
+
+<div class="dropdown-overlay @(activeDropdown != 0 ? "show" : "")" @onclick="CloseActionsMenu" @onclick:stopPropagation="true"></div>
+
+@code {
+    // Sample data - replace with your actual data service
+    private List<Ticket> tickets = new List<Ticket>();
+    private List<Ticket> filteredTickets = new List<Ticket>();
+    
+    private string searchTerm = "";
+    private string statusFilter = "";
+    private string priorityFilter = "";
+    private string sortColumn = "CreatedDate";
+    private string sortDirection = "desc";
+    
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int activeDropdown = 0;
+    private bool showEditModal = false;
+    private bool isEditSubmitting = false;
+    private EditTicketModel? editTicketModel = null;
+    private HashSet<int> expandedTickets = new HashSet<int>();
+    private void ToggleTicketDetails(int ticketId)
+{
+    if (expandedTickets.Contains(ticketId))
+    {
+        expandedTickets.Remove(ticketId);
+    }
+    else
+    {
+        expandedTickets.Add(ticketId);
+    }
+    StateHasChanged();
+}
+
+    private async Task EditTicket(int ticketId)
+{
+    CloseActionsMenu();
+    try
+    {
+        var ticket = await TicketService.GetTicketByIdAsync(ticketId);
+        if (ticket != null)
+        {
+            editTicketModel = new EditTicketModel
+            {
+                Id = ticket.Id,
+                RequesterName = ticket.RequesterName,
+                RequesterEmail = ticket.RequesterEmail,
+                Department = ticket.Department,
+                Category = ticket.Category,
+                Subject = ticket.Subject,
+                Priority = ticket.Priority,
+                Status = ticket.Status,
+                Description = ticket.Description,
+                Resolution = ticket.Resolution ?? ""
+            };
+            showEditModal = true;
+        }
+    }
+    catch (Exception ex)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Error loading ticket: {ex.Message}");
+    }
+}
+
+// Add these new methods:
+private void CloseEditModal()
+{
+    showEditModal = false;
+    editTicketModel = null;
+    isEditSubmitting = false;
+    StateHasChanged();
+}
+
+private async Task HandleEditSubmit()
+{
+    if (editTicketModel == null) return;
+    
+    isEditSubmitting = true;
+    StateHasChanged();
+
+    try
+    {
+        var ticket = await TicketService.GetTicketByIdAsync(editTicketModel.Id);
+        if (ticket != null)
+        {
+            // Update ticket properties
+            ticket.RequesterName = editTicketModel.RequesterName;
+            ticket.RequesterEmail = editTicketModel.RequesterEmail;
+            ticket.Department = editTicketModel.Department;
+            ticket.Category = editTicketModel.Category;
+            ticket.Subject = editTicketModel.Subject;
+            ticket.Priority = editTicketModel.Priority;
+            ticket.Status = editTicketModel.Status;
+            ticket.Description = editTicketModel.Description;
+            ticket.Resolution = editTicketModel.Resolution;
+            ticket.ModifiedDate = DateTime.Now;
+
+            // Set resolved/closed dates based on status
+            if (editTicketModel.Status == "Resolved" && ticket.ResolvedDate == null)
+            {
+                ticket.ResolvedDate = DateTime.Now;
+            }
+            else if (editTicketModel.Status != "Resolved")
+            {
+                ticket.ResolvedDate = null;
+            }
+
+            if (editTicketModel.Status == "Closed" && ticket.ClosedDate == null)
+            {
+                ticket.ClosedDate = DateTime.Now;
+            }
+            else if (editTicketModel.Status != "Closed")
+            {
+                ticket.ClosedDate = null;
+            }
+
+            await TicketService.UpdateTicketAsync(ticket);
+            await LoadTicketsAsync(); // Reload the tickets list
+            FilterAndSortTickets();
+            
+            CloseEditModal();
+            await JSRuntime.InvokeVoidAsync("alert", "Ticket updated successfully!");
+        }
+    }
+    catch (Exception ex)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Error updating ticket: {ex.Message}");
+    }
+    finally
+    {
+        isEditSubmitting = false;
+        StateHasChanged();
+    }
+}
+
+    protected override async Task OnInitializedAsync()
+{
+    await LoadTicketsAsync();
+}
+
+    private async Task LoadTicketsAsync()
+{
+    try
+    {
+        // Load all tickets from database
+        tickets = await TicketService.GetAllTicketsAsync();
+        FilterAndSortTickets();
+    }
+    catch (Exception ex)
+    {
+        // Handle error - you might want to show a toast or error message
+        Console.WriteLine($"Error loading tickets: {ex.Message}");
+        tickets = new List<Ticket>(); // Fallback to empty list
+    }
+}
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? "";
+        currentPage = 1;
+        FilterAndSortTickets();
+    }
+
+    private void OnFilterChanged()
+    {
+        currentPage = 1;
+        FilterAndSortTickets();
+    }
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+        {
+            sortDirection = sortDirection == "asc" ? "desc" : "asc";
+        }
+        else
+        {
+            sortColumn = column;
+            sortDirection = "asc";
+        }
+        FilterAndSortTickets();
+    }
+
+    private void FilterAndSortTickets()
+    {
+        var query = tickets.AsQueryable();
+
+        // Apply search filter
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+           query = query.Where(t => t.Subject.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                       t.RequesterName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                       t.RequesterEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                       t.Id.ToString().Contains(searchTerm));
+        }
+
+        // Apply status filter
+        if (!string.IsNullOrEmpty(statusFilter))
+        {
+            query = query.Where(t => t.Status == statusFilter);
+        }
+
+        // Apply priority filter
+        if (!string.IsNullOrEmpty(priorityFilter))
+        {
+            query = query.Where(t => t.Priority == priorityFilter);
+        }
+
+        // Apply sorting
+        query = sortColumn switch
+        {
+            "Id" => sortDirection == "asc" ? query.OrderBy(t => t.Id) : query.OrderByDescending(t => t.Id),
+            "Subject" => sortDirection == "asc" ? query.OrderBy(t => t.Subject) : query.OrderByDescending(t => t.Subject),
+            "Status" => sortDirection == "asc" ? query.OrderBy(t => t.Status) : query.OrderByDescending(t => t.Status),
+            "Priority" => sortDirection == "asc" ? query.OrderBy(t => t.Priority) : query.OrderByDescending(t => t.Priority),
+            "Requester" => sortDirection == "asc" ? query.OrderBy(t => t.RequesterName) : query.OrderByDescending(t => t.RequesterName),
+            "AssignedTo" => sortDirection == "asc" ? query.OrderBy(t => t.AssignedToUser != null ? t.AssignedToUser.Email : "") : query.OrderByDescending(t => t.AssignedToUser != null ? t.AssignedToUser.Email : ""),
+            "CreatedDate" => sortDirection == "asc" ? query.OrderBy(t => t.CreatedDate) : query.OrderByDescending(t => t.CreatedDate),
+            _ => query.OrderByDescending(t => t.CreatedDate)
+        };
+
+        filteredTickets = query.ToList();
+    }
+
+    private List<Ticket> GetPaginatedTickets()
+    {
+        return filteredTickets
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private int GetTotalPages()
+    {
+        return (int)Math.Ceiling((double)filteredTickets.Count / pageSize);
+    }
+
+    private void PreviousPage()
+    {
+        if (currentPage > 1)
+        {
+            currentPage--;
+        }
+    }
+
+    private void NextPage()
+    {
+        if (currentPage < GetTotalPages())
+        {
+            currentPage++;
+        }
+    }
+
+    private string GetSortIcon(string column)
+    {
+        if (sortColumn != column) return "";
+        return sortDirection == "asc" ? "fa-sort-up" : "fa-sort-down";
+    }
+
+    private int GetTotalTickets() => tickets.Count;
+    private int GetTicketsByStatus(string status) => tickets.Count(t => t.Status == status);
+
+// You can also modify the existing ToggleActionsMenu method if needed
+private void ToggleActionsMenu(int ticketId)
+{
+    activeDropdown = activeDropdown == ticketId ? 0 : ticketId;
+    StateHasChanged();
+}
+
+    private void CloseActionsMenu()
+    {
+        activeDropdown = 0;
+        StateHasChanged();
+    }
+
+    private void ViewTicket(int ticketId)
+    {
+        CloseActionsMenu();
+        Navigation.NavigateTo($"/tickets/details/{ticketId}");
+    }
+
+    private async Task AssignTicket(int ticketId)
+    {
+        CloseActionsMenu();
+        await JSRuntime.InvokeVoidAsync("alert", $"Assign ticket #{ticketId} functionality to be implemented");
+    }
+
+    private async Task DeleteTicket(int ticketId)
+{
+    CloseActionsMenu();
+    bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete ticket #{ticketId}?");
+    if (confirmed)
+    {
+        try
+        {
+            bool deleted = await TicketService.DeleteTicketAsync(ticketId);
+            if (deleted)
+            {
+                // Reload tickets from database
+                await LoadTicketsAsync();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error deleting ticket: {ex.Message}");
+        }
+    }
+}
+
+    private async Task CloseTicket(int ticketId)
+{
+    CloseActionsMenu();
+    try
+    {
+        await TicketService.ChangeTicketStatusAsync(ticketId, "Closed");
+        await LoadTicketsAsync(); // Reload to get updated data
+        StateHasChanged();
+    }
+    catch (Exception ex)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Error closing ticket: {ex.Message}");
+    }
+}
+
+private async Task ReopenTicket(int ticketId)
+{
+    CloseActionsMenu();
+    try
+    {
+        await TicketService.ChangeTicketStatusAsync(ticketId, "Open");
+        await LoadTicketsAsync(); // Reload to get updated data
+        StateHasChanged();
+    }
+    catch (Exception ex)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Error reopening ticket: {ex.Message}");
+    }
+}
+
+public class EditTicketModel
+{
+    public int Id { get; set; }
+    
+    [Required(ErrorMessage = "Requester name is required")]
+    public string RequesterName { get; set; } = "";
+
+    [Required(ErrorMessage = "Email address is required")]
+    [EmailAddress(ErrorMessage = "Please enter a valid email address")]
+    public string RequesterEmail { get; set; } = "";
+
+    [Required(ErrorMessage = "Department is required")]
+    public string Department { get; set; } = "";
+
+    [Required(ErrorMessage = "Category is required")]
+    public string Category { get; set; } = "";
+
+    [Required(ErrorMessage = "Subject is required")]
+    [StringLength(200, ErrorMessage = "Subject must be less than 200 characters")]
+    public string Subject { get; set; } = "";
+
+    [Required(ErrorMessage = "Priority is required")]
+    public string Priority { get; set; } = "";
+
+    [Required(ErrorMessage = "Status is required")]
+    public string Status { get; set; } = "";
+
+    [Required(ErrorMessage = "Description is required")]
+    [StringLength(2000, MinimumLength = 20, ErrorMessage = "Description must be between 20 and 2000 characters")]
+    public string Description { get; set; } = "";
+
+    [StringLength(1000, ErrorMessage = "Resolution must be less than 1000 characters")]
+    public string? Resolution { get; set; }
+}
+    
+}
