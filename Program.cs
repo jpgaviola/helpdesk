@@ -13,10 +13,11 @@ builder.Services.AddRazorComponents()
 builder.Services.AddDbContext<HelpdeskDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add UserService
 builder.Services.AddScoped<IUserService, UserService>();
 
 builder.Services.AddScoped<ITicketService, TicketService>();
+
+builder.Services.AddScoped<IDocumentRequestService, DocumentRequestService>();
 
 var app = builder.Build();
 

@@ -403,8 +403,8 @@
     }
 
     .role-admin { background: #ffebee; color: #c62828; }
-    .role-user { background: #e8f5e8; color: #2e7d32; }
-    .role-moderator { background: #fff8e1; color: #f57c00; }
+    .role-requester { background: #e8f5e8; color: #2e7d32; }
+    .role-legalstaff { background: #fff8e1; color: #f57c00; }
 
     .actions-dropdown {
         position: relative;
@@ -1108,8 +1108,8 @@
             <select class="filter-dropdown" @bind="roleFilter" @bind:after="OnFilterChanged">
                 <option value="">All Roles</option>
                 <option value="Admin">Admin</option>
-                <option value="User">User</option>
-                <option value="Moderator">Moderator</option>
+                <option value="Requester">Requester</option>
+                <option value="Legal Staff">Legal Staff</option>
             </select>
         </div>
         <div class="toolbar-right">
@@ -1387,8 +1387,8 @@
                         <InputSelect class="form-select" @bind-Value="newUser.Role">
                             <option value="">Select Role</option>
                             <option value="Admin">Admin</option>
-                            <option value="User">User</option>
-                            <option value="Moderator">Moderator</option>
+                            <option value="Requester">Requester</option>
+                            <option value="Legal Staff">Legal Staff</option>
                         </InputSelect>
                         <ValidationMessage For="() => newUser.Role" />
                     </div>
@@ -1494,8 +1494,8 @@
                             <InputSelect class="form-select" @bind-Value="editUser.Role">
                                 <option value="">Select Role</option>
                                 <option value="Admin">Admin</option>
-                                <option value="User">User</option>
-                                <option value="Moderator">Moderator</option>
+                                <option value="Requester">Requester</option>
+                                <option value="Legal Staff">Legal Staff</option>
                             </InputSelect>
                             <ValidationMessage For="() => editUser.Role" />
                         </div>

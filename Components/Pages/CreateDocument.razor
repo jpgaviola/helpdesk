@@ -7,6 +7,8 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @using System.IO
+@using HelpdeskBlazor.Services
+@inject IDocumentRequestService DocumentRequestService
 
 <style>
     .create-document-container {
@@ -697,7 +699,7 @@
                     {
                         <div class="files-list">
                             <div class="files-header-simple">
-                                <strong>General Attachments (@generalAttachments.Count)</strong>
+                                <strong>Attachments (@generalAttachments.Count)</strong>
                             </div>
                             <div class="files-table">
                                 @foreach (var file in generalAttachments)
@@ -820,10 +822,6 @@
                 <div style="display: flex; gap: 15px;">
                     @if (lastCreatedRequestId > 0)
                     {
-                        <a href="/documents" class="btn btn-secondary">
-                            <i class="fas fa-list"></i>
-                            View All Requests
-                        </a>
                         <button type="button" class="btn btn-primary" @onclick="CreateAnotherRequest">
                             <i class="fas fa-plus"></i>
                             Create Another Request
@@ -1092,21 +1090,84 @@
         isSubmitting = true;
         try
         {
+            // Create the DocumentRequest entity
+            var documentRequest = new DocumentRequest
+            {
+                Company = requestModel.Company,
+                DateNeeded = requestModel.DateNeeded,
+                TimeNeeded = requestModel.TimeNeeded,
+                Particulars = requestModel.Particulars,
+                Status = "Pending",
+                CreatedBy = null,
+                ModifiedBy = null,
+                CreatedDate = DateTime.Now,
+                ModifiedDate = null,
+                IsDeleted = false
+            };
 
-            await Task.Delay(2000);
+            // Save the document request first
+            var savedRequest = await DocumentRequestService.CreateDocumentRequestAsync(documentRequest);
+            lastCreatedRequestId = savedRequest.Id;
 
-            lastCreatedRequestId = new Random().Next(1000, 9999);
+            // Save each document item
+            foreach (var doc in documents)
+            {
+                var documentItem = new DocumentItem
+                {
+                    DocumentRequestId = savedRequest.Id,
+                    DocumentName = doc.DocumentName,
+                    Type = doc.Type,
+                    NumberOfCopies = doc.NumberOfCopies,
+                    CreatedDate = DateTime.Now
+                };
 
-            await ShowToast("Request Created Successfully!",
-            $"Your document request #{lastCreatedRequestId} has been submitted and will be processed shortly.",
-            "success");
+                await DocumentRequestService.AddDocumentItemAsync(documentItem);
+            }
 
+            // Save general attachments WITH actual file saving
+            foreach (var file in generalAttachments)
+            {
+                try
+                {
+                    // Actually save the file to disk
+                    var savedFilePath = await SaveFileAsync(file, savedRequest.Id);
+
+                    var attachment = new DocumentRequestAttachment
+                    {
+                        DocumentRequestId = savedRequest.Id,
+                        FileName = file.Name,
+                        FilePath = savedFilePath, // This now contains the actual saved file path
+                        ContentType = file.ContentType,
+                        FileSize = file.Size,
+                        UploadedBy = null,
+                        UploadedDate = DateTime.Now
+                    };
+
+                    await DocumentRequestService.AddAttachmentAsync(attachment);
+                }
+                catch (Exception ex)
+                {
+                    await ShowToast("File Upload Warning",
+                    $"Could not save file '{file.Name}': {ex.Message}",
+                    "error");
+                    // Continue with other files even if one fails
+                }
+            }
+
+            var attachmentCount = generalAttachments.Count;
+            var successMessage = $"Your document request #{lastCreatedRequestId} has been submitted successfully!";
+            if (attachmentCount > 0)
+            {
+                successMessage += $" {attachmentCount} attachment(s) included.";
+            }
+
+            await ShowToast("Request Created Successfully!", successMessage, "success");
             showSuccessMessage = true;
         }
         catch (Exception ex)
         {
-            await ShowToast("Error Creating Request",
-            $"An error occurred while creating your request: {ex.Message}",
+            await ShowToast("Error Details",
+            $"Error: {ex.Message}\n\nInner Exception: {ex.InnerException?.Message}",
             "error");
         }
         finally
@@ -1207,6 +1268,31 @@
         }
 
         return $"{len:0.##} {sizes[order]}";
+    }
+
+    private async Task<string> SaveFileAsync(IBrowserFile file, int requestId)
+    {
+        try
+        {
+            // Create directory if it doesn't exist
+            var uploadsPath = Path.Combine("wwwroot", "uploads", "documents", requestId.ToString());
+            Directory.CreateDirectory(uploadsPath);
+
+            // Generate unique filename to avoid conflicts
+            var fileName = $"{Guid.NewGuid()}_{file.Name}";
+            var filePath = Path.Combine(uploadsPath, fileName);
+
+            // Save file to disk
+            using var fileStream = new FileStream(filePath, FileMode.Create);
+            await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(fileStream);
+
+            // Return the relative path for database storage
+            return $"/uploads/documents/{requestId}/{fileName}";
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to save file {file.Name}: {ex.Message}");
+        }
     }
 
     public class DocumentRequestModel
