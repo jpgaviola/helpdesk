@@ -4714,23 +4714,25 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\User\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\jpgaviola\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {},
+    "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\User\\Projects\\HelpdeskBlazor\\HelpdeskBlazor.csproj",
+      "projectUniqueName": "C:\\Projects\\helpdesk\\HelpdeskBlazor.csproj",
       "projectName": "HelpdeskBlazor",
-      "projectPath": "C:\\Users\\User\\Projects\\HelpdeskBlazor\\HelpdeskBlazor.csproj",
-      "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\User\\Projects\\HelpdeskBlazor\\obj\\",
+      "projectPath": "C:\\Projects\\helpdesk\\HelpdeskBlazor.csproj",
+      "packagesPath": "C:\\Users\\jpgaviola\\.nuget\\packages\\",
+      "outputPath": "C:\\Projects\\helpdesk\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages",
+        "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
       ],
       "configFilePaths": [
-        "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\jpgaviola\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -4757,7 +4759,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.300"
+      "SdkAnalysisLevel": "9.0.200"
     },
     "frameworks": {
       "net9.0": {
@@ -4797,7 +4799,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.301/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.204/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

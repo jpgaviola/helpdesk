@@ -17,22 +17,22 @@
 
     .main-wrapper {
         display: flex;
-        margin-top: 80px; /* Match header height exactly */
+        margin-top: 80px;
     }
 
     .main-content {
-        margin-left: 250px; /* Account for sidebar width */
-        padding: 0; /* Remove padding - let individual pages handle their own */
+        margin-left: 250px;
+        padding: 0;
         flex: 1;
         max-width: calc(100vw - 250px);
-        min-height: calc(100vh - 80px); /* Updated to match header height */
+        min-height: calc(100vh - 80px);
         background: #f8f9fa;
     }
 
     /* Responsive */
     @@media (max-width: 768px) {
         .main-wrapper {
-            margin-top: 80px; /* Ensure header height is consistent */
+            margin-top: 80px;
         }
         
         .main-content {

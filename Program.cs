@@ -43,7 +43,6 @@ if (app.Environment.IsDevelopment())
         var context = scope.ServiceProvider.GetRequiredService<HelpdeskDbContext>();
         try
         {
-            // Just test the connection, don't create database
             var canConnect = context.Database.CanConnect();
             if (canConnect)
             {

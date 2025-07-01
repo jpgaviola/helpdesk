@@ -17,7 +17,7 @@
                 </div>
                 <h2>Welcome to Helpdesk System</h2>
                 <p>Your comprehensive IT support solution for seamless business operations</p>
-                
+
                 <div class="features">
                     <div class="feature-item">
                         <i class="fas fa-ticket-alt"></i>
@@ -42,8 +42,9 @@
         <!-- Right Side - Login Form -->
         <div class="login-right">
             <div class="company-logo">
-    <img src="semirara.png" alt="Semirara Mining" style="max-width: 200px; height: auto; margin-bottom: 20px;" />
-</div>
+                <img src="semirara.png" alt="Semirara Mining"
+                    style="max-width: 200px; height: auto; margin-bottom: 20px;" />
+            </div>
 
             <!-- Error/Success Messages -->
             @if (!string.IsNullOrEmpty(errorMessage))
@@ -68,8 +69,8 @@
                 <div class="form-group">
                     <label for="username">Username or Email</label>
                     <div class="input-container">
-                        <InputText @bind-Value="loginModel.Username" class="form-control" id="username" 
-                                 placeholder="Enter your username or email" />
+                        <InputText @bind-Value="loginModel.Username" class="form-control" id="username"
+                            placeholder="Enter your username or email" />
                         <i class="fas fa-user input-icon"></i>
                     </div>
                     <ValidationMessage For="@(() => loginModel.Username)" />
@@ -78,11 +79,11 @@
                 <div class="form-group">
                     <label for="password">Password</label>
                     <div class="input-container">
-                        <input type="@(showPassword ? "text" : "password")" @bind="loginModel.Password" 
-                               class="form-control" id="password" placeholder="Enter your password" />
+                        <input type="@(showPassword ? "text" : "password")" @bind="loginModel.Password"
+                            class="form-control" id="password" placeholder="Enter your password" />
                         <i class="fas fa-lock input-icon"></i>
-                        <i class="fas @(showPassword ? "fa-eye-slash" : "fa-eye") password-toggle" 
-                           @onclick="TogglePassword"></i>
+                        <i class="fas @(showPassword ? "fa-eye-slash" : "fa-eye") password-toggle"
+                            @onclick="TogglePassword"></i>
                     </div>
                     <ValidationMessage For="@(() => loginModel.Password)" />
                 </div>
@@ -95,9 +96,10 @@
                     <a href="#" class="forgot-password">Forgot Password?</a>
                 </div>
 
-               <a href="/tickets" class="login-btn" style="display: inline-block; text-decoration: none; text-align: center; color: white;">
-    <span>Sign In</span>
-</a>
+                <a href="/tickets" class="login-btn"
+                    style="display: inline-block; text-decoration: none; text-align: center; color: white;">
+                    <span>Sign In</span>
+                </a>
             </EditForm>
         </div>
     </div>
@@ -127,31 +129,31 @@
         showPassword = !showPassword;
     }
 
-  private async Task HandleLogin()
-{
-  
-    
-    try 
+    private async Task HandleLogin()
     {
-        isLoading = true;
-        errorMessage = "Button clicked! Method is working...";
-        StateHasChanged();
-        
-      
-        await Task.Delay(1000); // Small delay to see the message
-        
-        Navigation.NavigateTo("/dashboard");
-     
+
+
+        try
+        {
+            isLoading = true;
+            errorMessage = "Button clicked! Method is working...";
+            StateHasChanged();
+
+
+            await Task.Delay(1000);
+
+            Navigation.NavigateTo("/dashboard");
+
+        }
+        catch (Exception ex)
+        {
+
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
-    catch (Exception ex)
-    {
-     
-        errorMessage = $"Error: {ex.Message}";
-    }
-    finally 
-    {
-        isLoading = false;
-        StateHasChanged();
-    }
-}
 }

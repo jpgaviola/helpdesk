@@ -47,7 +47,6 @@
         font-weight: 600;
     }
 
-    /* User Dropdown Menu */
     .user-dropdown {
         position: absolute;
         top: 100%;
@@ -125,7 +124,6 @@
         font-size: 14px;
     }
 
-    /* Overlay for closing dropdown */
     .dropdown-overlay {
         position: fixed;
         top: 0;
@@ -140,7 +138,6 @@
         display: block;
     }
 
-    /* Chevron rotation styles */
     .user-info .fa-chevron-down {
         transition: transform 0.3s ease;
         font-size: 12px;
@@ -177,7 +174,6 @@
     </div>
 </div>
 
-<!-- Overlay to close dropdown when clicking outside -->
 <div class="dropdown-overlay @(showUserMenu ? "show" : "")" @onclick="CloseUserMenu"></div>
 
 @code {

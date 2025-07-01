@@ -65,13 +65,11 @@ namespace HelpdeskBlazor.Data
                 entity.Property(e => e.ResolvedDate).HasColumnType("datetime2");
                 entity.Property(e => e.ClosedDate).HasColumnType("datetime2");
 
-                // Add index for better performance
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.Priority);
                 entity.HasIndex(e => e.CreatedDate);
             });
 
-            // Configure TicketAttachment entity
             modelBuilder.Entity<TicketAttachment>(entity =>
             {
                 entity.HasKey(e => e.Id);

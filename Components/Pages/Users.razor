@@ -9,7 +9,7 @@
 
 <style>
     .users-container {
-    padding: 30px 30px 80px 30px; /* Added extra bottom padding */
+    padding: 30px 30px 80px 30px;
     background: #f8f9fa;
     min-height: calc(100vh - 80px);
 }
@@ -236,7 +236,7 @@
     background: white;
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    overflow: visible; /* Changed from hidden to visible */
+    overflow: visible;
     position: relative;
 }
 
@@ -298,7 +298,6 @@
         color: #0A1A28;
         font-size: 14px;
         border-bottom: 2px solid #E7EAEE;
-        cursor: pointer;
         transition: all 0.3s ease;
         position: relative;
     }
@@ -444,7 +443,6 @@
     transition: all 0.3s ease;
 }
 
-/* NEW: Class for dropdowns that should open upward */
 .actions-menu.drop-up {
     top: auto;
     bottom: 100%;
@@ -1615,7 +1613,7 @@
 <div class="dropdown-overlay @(activeDropdown != 0 ? "show" : "")" @onclick="CloseActionsMenu" @onclick:stopPropagation="true"></div>
 
 @code {
-    // Database-connected properties
+    // Database connected properties
     private List<User> users = new List<User>();
     private List<User> filteredUsers = new List<User>();
     private List<int> selectedUsers = new List<int>();
@@ -1695,7 +1693,6 @@
     {
         var query = users.AsQueryable();
 
-        // Apply search filter
         if (!string.IsNullOrEmpty(searchTerm))
         {
             query = query.Where(u => u.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
@@ -1703,19 +1700,16 @@
                                    u.Department.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
         }
 
-        // Apply status filter
         if (!string.IsNullOrEmpty(statusFilter))
         {
             query = query.Where(u => u.Status == statusFilter);
         }
 
-        // Apply role filter
         if (!string.IsNullOrEmpty(roleFilter))
         {
             query = query.Where(u => u.Role == roleFilter);
         }
 
-        // Apply sorting
         query = sortColumn switch
         {
             "Name" => sortDirection == "asc" ? query.OrderBy(u => u.Name) : query.OrderByDescending(u => u.Name),
@@ -1780,7 +1774,6 @@
         return parts.Length > 0 ? parts[0][0].ToString().ToUpper() : "?";
     }
 
-    // Selection methods
     private void ToggleUserSelection(int userId, bool isSelected)
     {
         if (isSelected)
@@ -1819,8 +1812,6 @@
         selectedUsers.Clear();
     }
 
-    // Dropdown methods
-
     private void ToggleActionsMenu(int userId)
     {
         activeDropdown = activeDropdown == userId ? 0 : userId;
@@ -1833,7 +1824,6 @@
         StateHasChanged();
     }
 
-    // User action methods
     private void ViewUser(int userId)
     {
         CloseActionsMenu();
@@ -2002,8 +1992,7 @@
         try
         {
             await UserService.DeleteUserAsync(userToDelete.Id);
-            
-            // Store the name before clearing userToDelete
+           
             var deletedUserName = userToDelete.Name;
             
             await LoadUsersFromDatabase();
@@ -2025,7 +2014,6 @@
         }
     }
 
-    // Bulk action methods
     private async Task BulkActivate()
     {
         try
@@ -2098,17 +2086,16 @@
         }
     }
 
-    // Other methods
     private void OpenAddUserModal()
     {
-        newUser = new NewUserModel(); // Reset the form
+        newUser = new NewUserModel();
         showAddUserModal = true;
     }
 
     private void CloseAddUserModal()
     {
         showAddUserModal = false;
-        newUser = new NewUserModel(); // Reset the form
+        newUser = new NewUserModel();
         isSubmitting = false;
     }
 
@@ -2119,7 +2106,6 @@
 
         try
         {
-            // Create new user via database
             var user = new User
             {
                 Name = newUser.Name,
@@ -2129,19 +2115,16 @@
                 Department = newUser.Department,
                 Phone = newUser.Phone ?? "",
                 Location = newUser.Location ?? "",
-                PasswordHash = newUser.Password, // For now, store plain text (we'll hash it later)
+                PasswordHash = newUser.Password,
                 CreatedDate = DateTime.Now,
                 LastLogin = null
             };
 
-            // Save to database
             await UserService.CreateUserAsync(user);
             
-            // Reload users from database
             await LoadUsersFromDatabase();
             FilterAndSortUsers();
             
-            // Close modal and show success toast
             CloseAddUserModal();
             await ShowToast("Success!", $"User '{user.Name}' has been created!", "success");
         }
@@ -2182,12 +2165,10 @@
         toasts.Add(toast);
         StateHasChanged();
 
-        // Show toast with slight delay for animation
         await Task.Delay(100);
         toast.IsVisible = true;
         StateHasChanged();
 
-        // Auto-remove after 4 seconds
         _ = Task.Delay(4000).ContinueWith(async _ =>
         {
             await InvokeAsync(() =>
@@ -2205,7 +2186,6 @@
             toast.IsVisible = false;
             StateHasChanged();
 
-            // Remove from list after animation
             Task.Delay(300).ContinueWith(_ =>
             {
                 InvokeAsync(() =>
@@ -2217,7 +2197,6 @@
         }
     }
 
-    // Model classes - ONLY DEFINE ONCE
     public class NewUserModel
     {
         [Required(ErrorMessage = "Name is required")]
@@ -2278,7 +2257,7 @@
         public int Id { get; set; }
         public string Title { get; set; } = "";
         public string Message { get; set; } = "";
-        public string Type { get; set; } = "success"; // success, error, info
+        public string Type { get; set; } = "success";
         public bool IsVisible { get; set; } = false;
     }
 }

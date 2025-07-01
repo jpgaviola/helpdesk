@@ -33,7 +33,7 @@ namespace HelpdeskBlazor.Models
 
         [Required]
         [StringLength(20)]
-        public string Priority { get; set; } = string.Empty; // Low, Medium, High
+        public string Priority { get; set; } = string.Empty;
 
         [Required]
         [StringLength(2000)]
@@ -41,7 +41,7 @@ namespace HelpdeskBlazor.Models
 
         [Required]
         [StringLength(20)]
-        public string Status { get; set; } = "Open"; // Open, In Progress, Resolved, Closed
+        public string Status { get; set; } = "Open";
 
         public int? AssignedToUserId { get; set; }
 

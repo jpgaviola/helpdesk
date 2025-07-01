@@ -37,7 +37,6 @@ namespace HelpdeskBlazor.Models
         [StringLength(200)]
         public string? Location { get; set; }
 
-        // ADD THESE PASSWORD FIELDS
         [Required]
         [StringLength(255)]
         public string PasswordHash { get; set; } = string.Empty;
@@ -61,7 +60,6 @@ namespace HelpdeskBlazor.Models
         [Required]
         public bool IsDeleted { get; set; } = false;
 
-        // Navigation properties for audit trail
         [ForeignKey("CreatedBy")]
         public virtual User? CreatedByUser { get; set; }
 

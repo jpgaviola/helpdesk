@@ -17,65 +17,65 @@ build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = HelpdeskBlazor
 build_property.RootNamespace = HelpdeskBlazor
-build_property.ProjectDir = C:\Users\User\Projects\HelpdeskBlazor\
+build_property.ProjectDir = C:\Projects\helpdesk\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 9.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = C:\Users\User\Projects\HelpdeskBlazor
+build_property.MSBuildProjectDirectory = C:\Projects\helpdesk
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 9.0
 build_property.EnableCodeStyleSeverity = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/App.razor]
+[C:/Projects/helpdesk/Components/App.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xBcHAucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Layout/Header.razor]
+[C:/Projects/helpdesk/Components/Layout/Header.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcSGVhZGVyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Layout/MainLayout.razor]
+[C:/Projects/helpdesk/Components/Layout/MainLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcTWFpbkxheW91dC5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Layout/Sidebar.razor]
+[C:/Projects/helpdesk/Components/Layout/Sidebar.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcU2lkZWJhci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Layout/SimpleLayout.razor]
+[C:/Projects/helpdesk/Components/Layout/SimpleLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xMYXlvdXRcU2ltcGxlTGF5b3V0LnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Pages/AllTickets.razor]
+[C:/Projects/helpdesk/Components/Pages/AllTickets.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBbGxUaWNrZXRzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Pages/CreateTicket.razor]
+[C:/Projects/helpdesk/Components/Pages/CreateTicket.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDcmVhdGVUaWNrZXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Pages/Error.razor]
+[C:/Projects/helpdesk/Components/Pages/Error.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xFcnJvci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Pages/Home.razor]
+[C:/Projects/helpdesk/Components/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xIb21lLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Pages/Reports.razor]
+[C:/Projects/helpdesk/Components/Pages/Reports.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xSZXBvcnRzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Pages/Users.razor]
+[C:/Projects/helpdesk/Components/Pages/Users.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xVc2Vycy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/Routes.razor]
+[C:/Projects/helpdesk/Components/Routes.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xSb3V0ZXMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Users/User/Projects/HelpdeskBlazor/Components/_Imports.razor]
+[C:/Projects/helpdesk/Components/_Imports.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xfSW1wb3J0cy5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 

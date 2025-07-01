@@ -19,7 +19,7 @@ namespace HelpdeskBlazor.Models
 
         [Required]
         [StringLength(20)]
-        public string CommentType { get; set; } = "Comment"; // Comment, Internal Note, Status Change
+        public string CommentType { get; set; } = "Comment";
 
         [Required]
         public DateTime CreatedDate { get; set; } = DateTime.Now;
@@ -34,7 +34,6 @@ namespace HelpdeskBlazor.Models
         [Required]
         public bool IsDeleted { get; set; } = false;
 
-        // Navigation properties
         [ForeignKey("TicketId")]
         public virtual Ticket Ticket { get; set; } = null!;
 
