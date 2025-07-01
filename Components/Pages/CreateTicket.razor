@@ -798,6 +798,7 @@
 </style>
 
 <div class="create-ticket-container">
+
     <!-- Page Header -->
     <div class="page-header">
         <h1 class="page-title">
@@ -834,18 +835,55 @@
                 <!-- Basic Information Row -->
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label required">Requester Name</label>
-                        <InputText @bind-Value="ticketModel.RequesterName" class="form-input"
-                            placeholder="Enter your full name" />
-                        <ValidationMessage For="@(() => ticketModel.RequesterName)" class="error-message" />
+                        <label class="form-label required">APP Reference No.</label>
+                        <InputText @bind-Value="ticketModel.AppReferenceNo" class="form-input"
+                            placeholder="Enter APP reference number" />
+                        <div class="form-help-text">Please input N/A if not applicable</div>
+                        <ValidationMessage For="@(() => ticketModel.AppReferenceNo)" class="error-message" />
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label required">Email Address</label>
-                        <InputText @bind-Value="ticketModel.RequesterEmail" class="form-input"
-                            placeholder="your.email@company.com" type="email" />
-                        <ValidationMessage For="@(() => ticketModel.RequesterEmail)" class="error-message" />
+                        <label class="form-label required">Request Date</label>
+                        <InputDate @bind-Value="ticketModel.RequestDate" class="form-input" />
+                        <ValidationMessage For="@(() => ticketModel.RequestDate)" class="error-message" />
                     </div>
+                </div>
+
+                <!-- Company and Date/Time Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label required">Company</label>
+                        <InputSelect @bind-Value="ticketModel.Company" class="form-select">
+                            <option value="">Select Company</option>
+                            <option value="SMPC">SMPC
+                            </option>
+                            <option value="SCPC">SCPC</option>
+                            <option value="SLPGC">SLPGC</option>
+                            <option value="SCRC">SCRC</option>
+                            <option value="SIPDI">SIPDI</option>
+                            <option value="SCI">SCI</option>
+                            <option value="SEUI">SEUI</option>
+                            <option value="SELPGC">SELPGC</option>
+                            <option value="SCC">SCC</option>
+                            <option value="STC">STC</option>
+                            <option value="DWSSII">DWSSII</option>
+                            <option value="SRPGC">SRPGC</option>
+                        </InputSelect>
+                        <ValidationMessage For="@(() => ticketModel.Company)" class="error-message" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Date Needed</label>
+                        <InputDate @bind-Value="ticketModel.DateNeeded" class="form-input" />
+                        <ValidationMessage For="@(() => ticketModel.DateNeeded)" class="error-message" />
+                    </div>
+                </div>
+
+                <!-- Time Needed -->
+                <div class="form-group full-width">
+                    <label class="form-label required">Time Needed</label>
+                    <input type="time" @bind="ticketModel.TimeNeeded" class="form-input" style="width: 200px;" />
+                    <ValidationMessage For="@(() => ticketModel.TimeNeeded)" class="error-message" />
                 </div>
 
                 <!-- Department and Category Row -->
@@ -865,72 +903,31 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label required">Category</label>
+                        <label class="form-label required">Type of Concern</label>
                         <InputSelect @bind-Value="ticketModel.Category" class="form-select">
                             <option value="">Select Category</option>
-                            <option value="Hardware">Hardware Issue</option>
-                            <option value="Software">Software Issue</option>
-                            <option value="Network">Network/Connectivity</option>
-                            <option value="Account">Account Access</option>
-                            <option value="Request">Service Request</option>
-                            <option value="Other">Other</option>
+                            <option value="Contract Review/Preparation">Contract Review/Preparation</option>
+                            <option value="Legal Research & Opinion">Legal Research & Opinion</option>
+                            <option value="Secretary's Certificate">Secretary's Certificate</option>
                         </InputSelect>
                         <ValidationMessage For="@(() => ticketModel.Category)" class="error-message" />
                     </div>
                 </div>
 
-                <!-- Subject -->
-                <div class="form-group full-width">
-                    <label class="form-label required">Subject</label>
-                    <InputText @bind-Value="ticketModel.Subject" class="form-input"
-                        placeholder="Brief description of the issue" />
-                    <div class="form-help-text">Provide a clear, concise summary of your issue</div>
-                    <ValidationMessage For="@(() => ticketModel.Subject)" class="error-message" />
-                </div>
-
-                <!-- Priority Selection - CORRECTED WITH InputRadioGroup -->
-                <div class="form-group full-width">
-                    <label class="form-label required">Priority Level</label>
-                    <InputRadioGroup @bind-Value="ticketModel.Priority">
-                        <div class="priority-options">
-                            <div class="priority-option">
-                                <InputRadio Value=@("Low") class="priority-radio" id="priority-low" />
-                                <label for="priority-low" class="priority-label low">
-                                    <i class="fas fa-arrow-down"></i>&nbsp;&nbsp;Low
-                                </label>
-                            </div>
-                            <div class="priority-option">
-                                <InputRadio Value=@("Medium") class="priority-radio" id="priority-medium" />
-                                <label for="priority-medium" class="priority-label medium">
-                                    <i class="fas fa-minus"></i>&nbsp;&nbsp;Medium
-                                </label>
-                            </div>
-                            <div class="priority-option">
-                                <InputRadio Value=@("High") class="priority-radio" id="priority-high" />
-                                <label for="priority-high" class="priority-label high">
-                                    <i class="fas fa-arrow-up"></i>&nbsp;&nbsp;High
-                                </label>
-                            </div>
-                        </div>
-                    </InputRadioGroup>
-                    <ValidationMessage For="@(() => ticketModel.Priority)" class="error-message" />
-                </div>
-
                 <!-- Description -->
                 <div class="form-group full-width">
-                    <label class="form-label required">Description</label>
+                    <label class="form-label required">Particulars/Reason</label>
                     <InputTextArea @bind-Value="ticketModel.Description" class="form-textarea description"
-                        placeholder="Please provide detailed information about the issue, including steps to reproduce, error messages, and any troubleshooting already attempted..." />
-                    <div class="form-help-text">Include as much detail as possible to help us resolve your issue quickly
-                    </div>
+                        placeholder="Please provide detailed reason about the issue..." />
+                    <div class="form-help-text">@GetDescriptionHelpText()</div>
                     <ValidationMessage For="@(() => ticketModel.Description)" class="error-message" />
                 </div>
 
-                <!-- File Upload Section - WORKING VERSION -->
+                <!-- File Upload Section -->
                 <div class="form-group full-width">
                     <label class="form-label">Attachments</label>
 
-                    <!-- Simple, Working Upload Input -->
+                    <!-- Working Upload Input -->
                     <div style="margin: 15px 0;">
                         <InputFile OnChange="HandleFileSelected" multiple
                             accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt" class="working-file-input" />
@@ -972,7 +969,7 @@
 
                 <!-- Form Actions -->
                 <div class="form-actions">
-                    <a href="/tickets" class="btn btn-outline">
+                    <a href="/create" class="btn btn-outline">
                         <i class="fas fa-arrow-left"></i>
                         Cancel
                     </a>
@@ -1065,6 +1062,17 @@
         }
     }
 
+    private string GetDescriptionHelpText()
+{
+    return ticketModel.Category switch
+    {
+        "Contract Review/Preparation" => "Attach contract for review. If renewal of contract, attach the existing contract with the current draft. For contract preparation, state circumstances, consideration, critical provisions to be included, etc. For both, indicate name of signatories and passport details or other government issued IDs.",
+        "Legal Research & Opinion" => "State the legal query.",
+        "Secretary's Certificate" => "State Purpose and other material details for the request. Attach sample of board resolution if any. Indicate name of signatory/ies.",
+        _ => "Include as much detail as possible to help us resolve your issue quickly"
+    };
+}
+
     private async Task HandleSubmit()
     {
         isSubmitting = true;
@@ -1081,12 +1089,13 @@
 
             var ticket = new Ticket
             {
-                RequesterName = ticketModel.RequesterName,
-                RequesterEmail = ticketModel.RequesterEmail,
+                AppReferenceNo = ticketModel.AppReferenceNo,
+                RequestDate = ticketModel.RequestDate,
+                Company = ticketModel.Company,
+                DateNeeded = ticketModel.DateNeeded,
+                TimeNeeded = ticketModel.TimeNeeded,
                 Department = ticketModel.Department,
                 Category = ticketModel.Category,
-                Subject = ticketModel.Subject,
-                Priority = ticketModel.Priority,
                 Description = ticketModel.Description,
                 Status = "Open",
                 IsDraft = false,
@@ -1330,20 +1339,15 @@
 
     protected override void OnInitialized()
     {
-
         if (uploadedFiles == null)
         {
             uploadedFiles = new List<IBrowserFile>();
-
         }
 
-        if (string.IsNullOrEmpty(ticketModel.Priority))
-        {
-            ticketModel.Priority = "Medium";
-
-        }
-
-
+        // Set default values
+        ticketModel.RequestDate = DateTime.Today;
+        ticketModel.DateNeeded = DateTime.Today.AddDays(1);
+        ticketModel.TimeNeeded = new TimeOnly(9, 0);
     }
 
     private void RemoveFile(IBrowserFile file)
@@ -1406,25 +1410,27 @@
 
     public class CreateTicketModel
     {
-        [Required(ErrorMessage = "Requester name is required")]
-        public string RequesterName { get; set; } = "";
+        [Required(ErrorMessage = "APP Reference No. is required")]
+        [StringLength(50, ErrorMessage = "APP Reference No. must be less than 50 characters")]
+        public string AppReferenceNo { get; set; } = "";
 
-        [Required(ErrorMessage = "Email address is required")]
-        [EmailAddress(ErrorMessage = "Please enter a valid email address")]
-        public string RequesterEmail { get; set; } = "";
+        [Required(ErrorMessage = "Request Date is required")]
+        public DateTime RequestDate { get; set; } = DateTime.Today;
+
+        [Required(ErrorMessage = "Company is required")]
+        public string Company { get; set; } = "";
+
+        [Required(ErrorMessage = "Date Needed is required")]
+        public DateTime DateNeeded { get; set; } = DateTime.Today.AddDays(1);
+
+        [Required(ErrorMessage = "Time Needed is required")]
+        public TimeOnly TimeNeeded { get; set; } = new TimeOnly(9, 0); // Default to 9:00 AM
 
         [Required(ErrorMessage = "Department is required")]
         public string Department { get; set; } = "";
 
         [Required(ErrorMessage = "Category is required")]
         public string Category { get; set; } = "";
-
-        [Required(ErrorMessage = "Subject is required")]
-        [StringLength(200, ErrorMessage = "Subject must be less than 200 characters")]
-        public string Subject { get; set; } = "";
-
-        [Required(ErrorMessage = "Priority is required")]
-        public string Priority { get; set; } = "";
 
         [Required(ErrorMessage = "Description is required")]
         [StringLength(2000, MinimumLength = 20, ErrorMessage = "Description must be between 20 and 2000 characters")]

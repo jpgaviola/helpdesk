@@ -1,0 +1,1252 @@
+@page "/documents/create"
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using System.ComponentModel.DataAnnotations
+@using HelpdeskBlazor.Models
+@rendermode InteractiveServer
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@using System.IO
+
+<style>
+    .create-document-container {
+        padding: 30px;
+        background: #f8f9fa;
+        min-height: calc(100vh - 80px);
+    }
+
+    .page-header {
+        background: white;
+        padding: 25px 30px;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 25px;
+        border-left: 4px solid #ff6b35;
+    }
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: #0A1A28;
+        margin: 0 0 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .page-title i {
+        color: #ff6b35;
+        font-size: 24px;
+    }
+
+    .page-subtitle {
+        color: #666;
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .form-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+
+    .form-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        padding: 20px 30px;
+        border-bottom: 1px solid #E7EAEE;
+    }
+
+    .form-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #0A1A28;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .form-header i {
+        color: #ff6b35;
+        font-size: 16px;
+    }
+
+    .form-content {
+        padding: 30px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        margin-bottom: 25px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #0A1A28;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .form-label.required::after {
+        content: " *";
+        color: #dc3545;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #E7EAEE;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+        background: #fff;
+        font-family: inherit;
+    }
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    }
+
+    .form-textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .form-select {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+        background-position: right 12px center;
+        background-repeat: no-repeat;
+        background-size: 16px;
+        padding-right: 40px;
+        appearance: none;
+    }
+
+    .btn {
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+    }
+
+    .btn-secondary:hover {
+        background: #5a6268;
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-outline {
+        background: transparent;
+        color: #666;
+        border: 2px solid #E7EAEE;
+    }
+
+    .btn-outline:hover {
+        background: #f8f9fa;
+        border-color: #dee2e6;
+        color: #333;
+        text-decoration: none;
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-sm {
+        padding: 8px 16px;
+        font-size: 12px;
+    }
+
+    .working-file-input {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #E7EAEE;
+        border-radius: 8px;
+        font-size: 14px;
+        background: #fff;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .working-file-input:hover {
+        border-color: #ff6b35;
+        background: #fff8f5;
+    }
+
+    .working-file-input:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+    }
+
+    .working-file-input::file-selector-button {
+        background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        margin-right: 12px;
+        transition: all 0.3s ease;
+    }
+
+    .working-file-input::file-selector-button:hover {
+        background: linear-gradient(135deg, #f7931e 0%, #e8821a 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    }
+
+    .upload-help {
+        font-size: 12px;
+        color: #6c757d;
+        font-style: italic;
+        margin-top: 8px;
+    }
+
+    .files-list {
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        background: white;
+        margin-top: 15px;
+    }
+
+    .files-header-simple {
+        padding: 12px 15px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-size: 14px;
+        color: #495057;
+    }
+
+    .file-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f1f3f4;
+    }
+
+    .file-row:last-child {
+        border-bottom: none;
+    }
+
+    .file-row:hover {
+        background: #f8f9fa;
+    }
+
+    .file-info-simple {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+    }
+
+    .file-info-simple i {
+        color: #6c757d;
+        width: 16px;
+        text-align: center;
+    }
+
+    .file-name-simple {
+        font-weight: 500;
+        color: #212529;
+        font-size: 14px;
+    }
+
+    .file-size-simple {
+        color: #6c757d;
+        font-size: 12px;
+        margin-left: 5px;
+    }
+
+    .remove-btn-simple {
+        background: none;
+        border: none;
+        color: #dc3545;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        transition: all 0.2s ease;
+    }
+
+    .remove-btn-simple:hover {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        margin-top: 30px;
+        padding-top: 25px;
+        border-top: 1px solid #E7EAEE;
+    }
+
+    .document-item {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        border: 2px solid #E7EAEE;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .document-item:hover {
+        border-color: #ff6b35;
+        background: #fff8f5;
+    }
+
+    .document-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .document-item-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0A1A28;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .document-item-title i {
+        color: #ff6b35;
+    }
+
+    .remove-document-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .remove-document-btn:hover {
+        background: #c82333;
+        transform: translateY(-1px);
+    }
+
+    .validation-error {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+    }
+
+    .error-message {
+        color: #dc3545;
+        font-size: 12px;
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .success-banner {
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border: 1px solid #c3e6cb;
+        border-radius: 8px;
+        padding: 15px 20px;
+        margin-bottom: 25px;
+        color: #155724;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .success-banner i {
+        color: #28a745;
+        font-size: 18px;
+    }
+
+    .loading-spinner {
+        border: 2px solid transparent;
+        border-top: 2px solid currentColor;
+        border-radius: 50%;
+        width: 14px;
+        height: 14px;
+        animation: spin 1s linear infinite;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .add-document-section {
+        text-align: center;
+        padding: 30px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        border: 2px dashed #E7EAEE;
+        transition: all 0.3s ease;
+    }
+
+    .add-document-section:hover {
+        border-color: #ff6b35;
+        background: #fff8f5;
+    }
+
+    .add-document-icon {
+        font-size: 48px;
+        color: #ccc;
+        margin-bottom: 15px;
+    }
+
+    .add-document-text {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 20px;
+        font-weight: 500;
+    }
+
+    @@media (max-width: 768px) {
+        .create-document-container {
+            padding: 20px 15px;
+        }
+
+        .form-content {
+            padding: 20px;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .form-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+        }
+
+        .btn {
+            justify-content: center;
+        }
+
+        .document-item-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+
+    /* Toast Notification Styles */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+    }
+
+    .toast {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 300px;
+        max-width: 400px;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+        pointer-events: auto;
+        border-left: 4px solid;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+    }
+
+    .toast.success {
+        border-left-color: #28a745;
+    }
+
+    .toast.error {
+        border-left-color: #dc3545;
+    }
+
+    .toast.info {
+        border-left-color: #007bff;
+    }
+
+    .toast-icon {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+
+    .toast.success .toast-icon {
+        background: #28a745;
+    }
+
+    .toast.error .toast-icon {
+        background: #dc3545;
+    }
+
+    .toast.info .toast-icon {
+        background: #007bff;
+    }
+
+    .toast-content {
+        flex: 1;
+    }
+
+    .toast-title {
+        font-weight: 600;
+        color: #0A1A28;
+        font-size: 14px;
+        margin: 0 0 2px 0;
+    }
+
+    .toast-message {
+        color: #666;
+        font-size: 13px;
+        margin: 0;
+    }
+
+    .toast-close {
+        background: none;
+        border: none;
+        color: #999;
+        cursor: pointer;
+        padding: 0;
+        font-size: 16px;
+        line-height: 1;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .toast-close:hover {
+        color: #666;
+    }
+</style>
+
+<div class="create-document-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <i class="fas fa-file-alt"></i>
+            Create Document Request
+        </h1>
+        <p class="page-subtitle">Request official corporate documents and forms</p>
+    </div>
+
+    @if (showSuccessMessage)
+    {
+        <div class="success-banner">
+            <i class="fas fa-check-circle"></i>
+            <div>
+                <strong>Document Request Created Successfully!</strong>
+                Your request #@lastCreatedRequestId has been submitted and will be processed shortly.
+            </div>
+        </div>
+    }
+
+    <!-- Basic Information Form -->
+    <div class="form-container">
+        <div class="form-header">
+            <h3>
+                <i class="fas fa-info-circle"></i>
+                Basic Information
+            </h3>
+        </div>
+
+        <div class="form-content">
+            <EditForm Model="@requestModel">
+                <DataAnnotationsValidator />
+
+                <!-- Company and Date Row -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label required">Company</label>
+                        <InputSelect @bind-Value="requestModel.Company" class="form-select">
+                            <option value="">Select Company</option>
+                            <option value="SMPC">SMPC</option>
+                            <option value="SCPC">SCPC</option>
+                            <option value="SLPGC">SLPGC</option>
+                            <option value="SCRC">SCRC</option>
+                            <option value="SIPDI">SIPDI</option>
+                            <option value="SCI">SCI</option>
+                            <option value="SEUI">SEUI</option>
+                            <option value="SELPGC">SELPGC</option>
+                            <option value="SCC">SCC</option>
+                            <option value="STC">STC</option>
+                            <option value="DWSSII">DWSSII</option>
+                            <option value="SRPGC">SRPGC</option>
+                        </InputSelect>
+                        <ValidationMessage For="@(() => requestModel.Company)" class="error-message" />
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label required">Date Needed</label>
+                        <InputDate @bind-Value="requestModel.DateNeeded" class="form-input" />
+                        <ValidationMessage For="@(() => requestModel.DateNeeded)" class="error-message" />
+                    </div>
+                </div>
+
+                <!-- Time Needed -->
+                <div class="form-group full-width">
+                    <label class="form-label required">Time Needed</label>
+                    <input type="time" @bind="requestModel.TimeNeeded" class="form-input" style="width: 200px;" />
+                    <ValidationMessage For="@(() => requestModel.TimeNeeded)" class="error-message" />
+                </div>
+
+                <!-- Attachments -->
+                <div class="form-group full-width">
+                    <label class="form-label">Attachments</label>
+                    <div style="margin: 15px 0;">
+                        <InputFile OnChange="HandleGeneralFileSelected" multiple
+                            accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt" class="working-file-input" />
+                        <div class="upload-help">
+                            <i class="fas fa-info-circle" style="margin-right: 5px;"></i>
+                            Select multiple files up to 10MB each. Supported: Images, PDF, Word documents, Text files
+                        </div>
+                    </div>
+
+                    @if (generalAttachments != null && generalAttachments.Count > 0)
+                    {
+                        <div class="files-list">
+                            <div class="files-header-simple">
+                                <strong>General Attachments (@generalAttachments.Count)</strong>
+                            </div>
+                            <div class="files-table">
+                                @foreach (var file in generalAttachments)
+                                {
+                                    <div class="file-row">
+                                        <div class="file-info-simple">
+                                            <i class="@GetFileIcon(file.Name)"></i>
+                                            <span class="file-name-simple">@file.Name</span>
+                                            <span class="file-size-simple">(@FormatFileSize(file.Size))</span>
+                                        </div>
+                                        <button type="button" class="remove-btn-simple" @onclick="() => RemoveGeneralFile(file)"
+                                            @onclick:preventDefault="true">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </EditForm>
+        </div>
+    </div>
+
+    <!-- Documents Section -->
+    <div style="margin-bottom: 25px;">
+        @if (documents.Count > 0)
+        {
+            @for (int i = 0; i < documents.Count; i++)
+            {
+                var document = documents[i];
+                var documentIndex = i;
+
+                <div class="document-item">
+                    <div class="document-item-header">
+                        <div class="document-item-title">
+                            <i class="fas fa-file-alt"></i>
+                            Document #@(documentIndex + 1)
+                        </div>
+                        @if (documents.Count > 1)
+                        {
+                            <button type="button" class="remove-document-btn" @onclick="() => RemoveDocument(documentIndex)">
+                                <i class="fas fa-trash"></i> Remove
+                            </button>
+                        }
+                    </div>
+
+                    <EditForm Model="@document">
+                        <DataAnnotationsValidator />
+
+                        <!-- Document Name and Type Row -->
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required">Document Name</label>
+                                <InputText @bind-Value="document.DocumentName" class="form-input"
+                                    placeholder="Enter document name" />
+                                <ValidationMessage For="@(() => document.DocumentName)" class="error-message" />
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Type</label>
+                                <InputSelect @bind-Value="document.Type" class="form-select">
+                                    <option value="">Select Type</option>
+                                    <option value="Photocopy">Photocopy</option>
+                                    <option value="Certified by the SEC">Certified by the SEC</option>
+                                    <option value="Certified by the Corporate Secretary">Certified by the Corporate Secretary
+                                    </option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => document.Type)" class="error-message" />
+                            </div>
+                        </div>
+
+                        <!-- Number of Copies -->
+                        <div class="form-group">
+                            <label class="form-label required">No. of Copies</label>
+                            <InputNumber @bind-Value="document.NumberOfCopies" class="form-input" min="1" max="100"
+                                style="width: 150px;" />
+                            <ValidationMessage For="@(() => document.NumberOfCopies)" class="error-message" />
+                        </div>
+
+                        <!-- Particulars/Reason -->
+                        <div class="form-group full-width">
+                            <label class="form-label required">Particulars/Reason</label>
+                            <InputTextArea @bind-Value="requestModel.Particulars" class="form-textarea"
+                                placeholder="Please provide detailed reason for the document request..." />
+                            <ValidationMessage For="@(() => requestModel.Particulars)" class="error-message" />
+                        </div>
+                    </EditForm>
+                </div>
+            }
+        }
+
+        <!-- Add Document Section -->
+        <div class="add-document-section" @onclick="AddDocument" style="cursor: pointer;">
+            <div class="add-document-icon">
+                <i class="fas fa-plus-circle"></i>
+            </div>
+            <div class="add-document-text">
+                @if (documents.Count == 0)
+                {
+                    <span>Add Your First Document</span>
+                }
+                else
+                {
+                    <span>Add Another Document</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-container">
+        <div class="form-content" style="padding: 20px 30px;">
+            <div class="form-actions" style="margin-top: 0; padding-top: 0; border-top: none;">
+                <a href="/create" class="btn btn-outline">
+                    <i class="fas fa-arrow-left"></i>
+                    Cancel
+                </a>
+
+                <div style="display: flex; gap: 15px;">
+                    @if (lastCreatedRequestId > 0)
+                    {
+                        <a href="/documents" class="btn btn-secondary">
+                            <i class="fas fa-list"></i>
+                            View All Requests
+                        </a>
+                        <button type="button" class="btn btn-primary" @onclick="CreateAnotherRequest">
+                            <i class="fas fa-plus"></i>
+                            Create Another Request
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="button" class="btn btn-primary" @onclick="SubmitRequest" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <div class="loading-spinner"></div>
+                                <span>Creating Request...</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-paper-plane"></i>
+                                <span>Create Document Request</span>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container">
+        @foreach (var toast in toasts)
+        {
+            <div class="toast @toast.Type @(toast.IsVisible ? "show" : "")">
+                <div class="toast-icon">
+                    @if (toast.Type == "success")
+                    {
+                        <i class="fas fa-check"></i>
+                    }
+                    else if (toast.Type == "error")
+                    {
+                        <i class="fas fa-times"></i>
+                    }
+                    else if (toast.Type == "info")
+                    {
+                        <i class="fas fa-info"></i>
+                    }
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">@toast.Title</div>
+                    <div class="toast-message">@toast.Message</div>
+                </div>
+                <button class="toast-close" @onclick="() => RemoveToast(toast.Id)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private DocumentRequestModel requestModel { get; set; } = new();
+    private List<DocumentItemModel> documents = new();
+    private List<IBrowserFile> generalAttachments = new();
+
+    private bool isSubmitting = false;
+    private bool showSuccessMessage = false;
+    private int lastCreatedRequestId = 0;
+    private List<ToastNotification> toasts = new List<ToastNotification>();
+    private int toastIdCounter = 0;
+
+    private async Task HandleSubmit()
+    {
+        await SubmitRequest();
+    }
+
+    protected override void OnInitialized()
+    {
+        requestModel.DateNeeded = DateTime.Today.AddDays(1);
+        requestModel.TimeNeeded = new TimeOnly(9, 0);
+
+        AddDocument();
+    }
+
+    private void AddDocument()
+    {
+        documents.Add(new DocumentItemModel());
+        StateHasChanged();
+    }
+
+    private void RemoveDocument(int index)
+    {
+        if (documents.Count > 1 && index >= 0 && index < documents.Count)
+        {
+            documents.RemoveAt(index);
+            StateHasChanged();
+            _ = ShowToast("Document Removed", "Document has been removed from the request.", "info");
+        }
+    }
+
+    private async Task HandleGeneralFileSelected(InputFileChangeEventArgs e)
+    {
+        const long maxFileSize = 10 * 1024 * 1024;
+        const int maxFiles = 10;
+
+        try
+        {
+            if (e.FileCount == 0) return;
+
+            var selectedFiles = e.GetMultipleFiles(maxFiles);
+            int addedCount = 0;
+
+            foreach (var file in selectedFiles)
+            {
+                if (file.Size > maxFileSize)
+                {
+                    await ShowToast("File Too Large", $"File '{file.Name}' is too large. Maximum size is 10MB.", "error");
+                    continue;
+                }
+
+                if (generalAttachments.Any(f => f.Name == file.Name && f.Size == file.Size))
+                {
+                    await ShowToast("Duplicate File", $"File '{file.Name}' is already selected.", "error");
+                    continue;
+                }
+
+                generalAttachments.Add(file);
+                addedCount++;
+            }
+
+            if (addedCount > 0)
+            {
+                await ShowToast("Files Added", $"{addedCount} general attachment(s) added successfully.", "success");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Upload Error", $"Error selecting files: {ex.Message}", "error");
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task HandleDocumentFileSelected(InputFileChangeEventArgs e, int documentIndex)
+    {
+        const long maxFileSize = 10 * 1024 * 1024;
+        const int maxFiles = 10;
+
+        try
+        {
+            if (e.FileCount == 0 || documentIndex >= documents.Count) return;
+
+            var selectedFiles = e.GetMultipleFiles(maxFiles);
+            var document = documents[documentIndex];
+
+            if (document.Attachments == null)
+            {
+                document.Attachments = new List<IBrowserFile>();
+            }
+
+            int addedCount = 0;
+
+            foreach (var file in selectedFiles)
+            {
+                if (file.Size > maxFileSize)
+                {
+                    await ShowToast("File Too Large", $"File '{file.Name}' is too large. Maximum size is 10MB.", "error");
+                    continue;
+                }
+
+                if (document.Attachments.Any(f => f.Name == file.Name && f.Size == file.Size))
+                {
+                    await ShowToast("Duplicate File", $"File '{file.Name}' is already selected for this document.", "error");
+                    continue;
+                }
+
+                document.Attachments.Add(file);
+                addedCount++;
+            }
+
+            if (addedCount > 0)
+            {
+                await ShowToast("Files Added", $"{addedCount} document attachment(s) added successfully.", "success");
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Upload Error", $"Error selecting files: {ex.Message}", "error");
+        }
+
+        StateHasChanged();
+    }
+
+    private void RemoveGeneralFile(IBrowserFile file)
+    {
+        try
+        {
+            generalAttachments.Remove(file);
+            _ = ShowToast("File Removed", $"General attachment '{file.Name}' has been removed.", "info");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _ = ShowToast("Remove Error", $"Error removing file: {ex.Message}", "error");
+        }
+    }
+
+    private void RemoveDocumentFile(int documentIndex, IBrowserFile file)
+    {
+        try
+        {
+            if (documentIndex >= 0 && documentIndex < documents.Count)
+            {
+                var document = documents[documentIndex];
+                if (document.Attachments != null)
+                {
+                    document.Attachments.Remove(file);
+                    _ = ShowToast("File Removed", $"Document attachment '{file.Name}' has been removed.", "info");
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _ = ShowToast("Remove Error", $"Error removing file: {ex.Message}", "error");
+        }
+    }
+
+    private async Task SubmitRequest()
+    {
+        if (documents.Count == 0)
+        {
+            await ShowToast("Validation Error", "Please add at least one document to the request.", "error");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(requestModel.Company))
+        {
+            await ShowToast("Validation Error", "Please select a company.", "error");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(requestModel.Particulars))
+        {
+            await ShowToast("Validation Error", "Please provide particulars/reason for the request.", "error");
+            return;
+        }
+
+        // Validate each document
+        for (int i = 0; i < documents.Count; i++)
+        {
+            var doc = documents[i];
+            if (string.IsNullOrWhiteSpace(doc.DocumentName))
+            {
+                await ShowToast("Validation Error", $"Please enter a name for Document #{i + 1}.", "error");
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(doc.Type))
+            {
+                await ShowToast("Validation Error", $"Please select a type for Document #{i + 1}.", "error");
+                return;
+            }
+            if (doc.NumberOfCopies <= 0)
+            {
+                await ShowToast("Validation Error", $"Please enter a valid number of copies for Document #{i + 1}.", "error");
+                return;
+            }
+        }
+
+        isSubmitting = true;
+        try
+        {
+
+            await Task.Delay(2000);
+
+            lastCreatedRequestId = new Random().Next(1000, 9999);
+
+            await ShowToast("Request Created Successfully!",
+            $"Your document request #{lastCreatedRequestId} has been submitted and will be processed shortly.",
+            "success");
+
+            showSuccessMessage = true;
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error Creating Request",
+            $"An error occurred while creating your request: {ex.Message}",
+            "error");
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CreateAnotherRequest()
+    {
+        lastCreatedRequestId = 0;
+        showSuccessMessage = false;
+        requestModel = new DocumentRequestModel
+        {
+            DateNeeded = DateTime.Today.AddDays(1),
+            TimeNeeded = new TimeOnly(9, 0)
+        };
+        documents.Clear();
+        generalAttachments.Clear();
+        AddDocument();
+        StateHasChanged();
+    }
+
+    private async Task ShowToast(string title, string message, string type = "success")
+    {
+        var toast = new ToastNotification
+        {
+            Id = ++toastIdCounter,
+            Title = title,
+            Message = message,
+            Type = type,
+            IsVisible = false
+        };
+
+        toasts.Add(toast);
+        StateHasChanged();
+
+        await Task.Delay(100);
+        toast.IsVisible = true;
+        StateHasChanged();
+
+        _ = Task.Delay(4000).ContinueWith(async _ =>
+        {
+            await InvokeAsync(() =>
+    {
+            RemoveToast(toast.Id);
+        });
+        });
+    }
+
+    private void RemoveToast(int toastId)
+    {
+        var toast = toasts.FirstOrDefault(t => t.Id == toastId);
+        if (toast != null)
+        {
+            toast.IsVisible = false;
+            StateHasChanged();
+
+            Task.Delay(300).ContinueWith(_ =>
+            {
+                InvokeAsync(() =>
+    {
+                toasts.Remove(toast);
+                StateHasChanged();
+            });
+            });
+        }
+    }
+
+    private string GetFileIcon(string fileName)
+    {
+        var extension = Path.GetExtension(fileName)?.ToLower() ?? "";
+        return extension switch
+        {
+            ".pdf" => "fas fa-file-pdf",
+            ".doc" or ".docx" => "fas fa-file-word",
+            ".jpg" or ".jpeg" or ".png" or ".gif" or ".bmp" or ".webp" => "fas fa-file-image",
+            ".txt" => "fas fa-file-alt",
+            ".zip" or ".rar" => "fas fa-file-archive",
+            ".xls" or ".xlsx" => "fas fa-file-excel",
+            _ => "fas fa-file"
+        };
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        if (bytes == 0) return "0 B";
+
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        double len = bytes;
+        int order = 0;
+
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    public class DocumentRequestModel
+    {
+        [Required(ErrorMessage = "Company is required")]
+        public string Company { get; set; } = "";
+
+        [Required(ErrorMessage = "Date Needed is required")]
+        public DateTime DateNeeded { get; set; } = DateTime.Today.AddDays(1);
+
+        [Required(ErrorMessage = "Time Needed is required")]
+        public TimeOnly TimeNeeded { get; set; } = new TimeOnly(9, 0);
+
+        [Required(ErrorMessage = "Particulars/Reason is required")]
+        [StringLength(2000, MinimumLength = 10, ErrorMessage = "Particulars must be between 10 and 2000 characters")]
+        public string Particulars { get; set; } = "";
+    }
+
+    public class DocumentItemModel
+    {
+        [Required(ErrorMessage = "Document Name is required")]
+        [StringLength(200, ErrorMessage = "Document Name must be less than 200 characters")]
+        public string DocumentName { get; set; } = "";
+
+        [Required(ErrorMessage = "Type is required")]
+        public string Type { get; set; } = "";
+
+        [Required(ErrorMessage = "Number of Copies is required")]
+        [Range(1, 100, ErrorMessage = "Number of Copies must be between 1 and 100")]
+        public int NumberOfCopies { get; set; } = 1;
+
+        public List<IBrowserFile>? Attachments { get; set; } = new();
+    }
+
+    public class ToastNotification
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string Type { get; set; } = "success";
+        public bool IsVisible { get; set; } = false;
+    }
+}

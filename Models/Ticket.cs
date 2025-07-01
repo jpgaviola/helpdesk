@@ -67,6 +67,18 @@ namespace HelpdeskBlazor.Models
         [Required]
         public bool IsDraft { get; set; } = false;
 
+        [StringLength(50)]
+        public string? AppReferenceNo { get; set; }
+
+        public DateTime? RequestDate { get; set; }
+
+        [StringLength(100)]
+        public string? Company { get; set; }
+
+        public DateTime? DateNeeded { get; set; }
+
+        public TimeOnly? TimeNeeded { get; set; }
+
         // Navigation properties
         [ForeignKey("AssignedToUserId")]
         public virtual User? AssignedToUser { get; set; }

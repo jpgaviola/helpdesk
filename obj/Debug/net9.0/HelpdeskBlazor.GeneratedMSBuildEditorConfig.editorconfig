@@ -52,6 +52,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xBbGxUaWNrZXRzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Projects/helpdesk/Components/Pages/Create.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDcmVhdGUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Projects/helpdesk/Components/Pages/CreateDocument.razor]
+build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDcmVhdGVEb2N1bWVudC5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Projects/helpdesk/Components/Pages/CreateTicket.razor]
 build_metadata.AdditionalFiles.TargetPath = Q29tcG9uZW50c1xQYWdlc1xDcmVhdGVUaWNrZXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 

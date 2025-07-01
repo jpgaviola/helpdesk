@@ -208,7 +208,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="/tickets/create" class="nav-link @(IsActive("/tickets/create") ? "active" : "")">
+                <a href="/create" class="nav-link @(IsActive("/create") ? "active" : "")">
                     <i class="fas fa-plus"></i>
                     <span>Create Request</span>
                 </a>
@@ -262,6 +262,11 @@
 
     private bool IsActive(string path)
     {
+        if (path == "/create" && (currentPath.EndsWith("/create", StringComparison.OrdinalIgnoreCase) ||
+        currentPath.EndsWith("/tickets/create", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
         return currentPath.EndsWith(path, StringComparison.OrdinalIgnoreCase);
     }
 
