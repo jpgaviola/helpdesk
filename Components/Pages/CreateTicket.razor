@@ -795,6 +795,117 @@
         color: #6c757d;
         font-style: italic;
     }
+
+    .signatory-item {
+    background: #f8f9fa;
+    border: 2px solid #E7EAEE;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.signatory-item:hover {
+    border-color: #ff6b35;
+    background: #fff8f5;
+}
+
+.signatory-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.signatory-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #0A1A28;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.signatory-title i {
+    color: #ff6b35;
+    font-size: 14px;
+}
+
+.remove-signatory-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.remove-signatory-btn:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.signatory-fields {
+    /* No additional styling needed - uses existing form-row styles */
+}
+
+.add-signatory-section {
+    text-align: center;
+    margin: 20px 0;
+    padding: 20px;
+    border: 2px dashed #E7EAEE;
+    border-radius: 12px;
+    background: #fafbfc;
+    transition: all 0.3s ease;
+}
+
+.add-signatory-section:hover {
+    border-color: #ff6b35;
+    background: #fff8f5;
+}
+
+.add-signatory-btn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.add-signatory-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+/* Mobile Responsive */
+@@media (max-width: 768px) {
+    .signatory-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .remove-signatory-btn {
+        align-self: flex-end;
+    }
+}
 </style>
 
 <div class="create-ticket-container">
@@ -873,17 +984,30 @@
                     </div>
 
                     <div class="form-group">
+                        <label class="form-label required">Location</label>
+                        <InputSelect @bind-Value="ticketModel.Location" class="form-select">
+                            <option value="">Select Location</option>
+                            <option value="Makati">Makati</option>
+                            <option value="Calaca">Calaca</option>
+                            <option value="Minesite">Minesite</option>
+                        </InputSelect>
+                        <ValidationMessage For="@(() => ticketModel.Location)" class="error-message" />
+                    </div>
+                </div>
+
+                <!-- Date Needed and Time Needed Row -->
+                <div class="form-row">
+                    <div class="form-group">
                         <label class="form-label required">Date Needed</label>
                         <InputDate @bind-Value="ticketModel.DateNeeded" class="form-input" />
                         <ValidationMessage For="@(() => ticketModel.DateNeeded)" class="error-message" />
                     </div>
-                </div>
 
-                <!-- Time Needed -->
-                <div class="form-group full-width">
-                    <label class="form-label required">Time Needed</label>
-                    <input type="time" @bind="ticketModel.TimeNeeded" class="form-input" style="width: 200px;" />
-                    <ValidationMessage For="@(() => ticketModel.TimeNeeded)" class="error-message" />
+                    <div class="form-group">
+                        <label class="form-label required">Time Needed</label>
+                        <input type="time" @bind="ticketModel.TimeNeeded" class="form-input" />
+                        <ValidationMessage For="@(() => ticketModel.TimeNeeded)" class="error-message" />
+                    </div>
                 </div>
 
                 <!-- Department and Category Row -->
@@ -922,6 +1046,66 @@
                     <div class="form-help-text">@GetDescriptionHelpText()</div>
                     <ValidationMessage For="@(() => ticketModel.Description)" class="error-message" />
                 </div>
+
+                @if (ticketModel.Category == "Contract Review/Preparation" || ticketModel.Category == "Secretary's Certificate")
+{
+    <div class="form-group full-width">
+        <label class="form-label required">Authorized Signatory/ies</label>
+        
+        <!-- Signatories List -->
+        @for (int i = 0; i < ticketModel.AuthorizedSignatories.Count; i++)
+        {
+            var signatory = ticketModel.AuthorizedSignatories[i];
+            var signatoryIndex = i;
+            
+            <div class="signatory-item">
+                <div class="signatory-header">
+                    <h4 class="signatory-title">
+                        <i class="fas fa-user"></i>
+                        Signatory #@(i + 1)
+                    </h4>
+                    @if (ticketModel.AuthorizedSignatories.Count > 1)
+                    {
+                        <button type="button" class="remove-signatory-btn" @onclick="() => RemoveSignatory(signatoryIndex)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    }
+                </div>
+                
+                <div class="signatory-fields">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label required">Full Name</label>
+                            <InputText @bind-Value="signatory.Name" class="form-input" 
+                                placeholder="Enter full name of signatory" />
+                            <ValidationMessage For="@(() => signatory.Name)" class="error-message" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label required">Position/Title</label>
+                            <InputText @bind-Value="signatory.Position" class="form-input" 
+                                placeholder="Enter position or title" />
+                            <ValidationMessage For="@(() => signatory.Position)" class="error-message" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        
+        <!-- Add Another Signatory Button -->
+        <div class="add-signatory-section">
+            <button type="button" class="add-signatory-btn" @onclick="AddSignatory">
+                <i class="fas fa-plus"></i>
+                Add Another Signatory
+            </button>
+        </div>
+        
+        <div class="form-help-text">
+            <i class="fas fa-info-circle"></i>
+            Please provide the full names and positions of all authorized signatories. Include passport details or government-issued ID information in the description field.
+        </div>
+    </div>
+}
 
                 <!-- File Upload Section -->
                 <div class="form-group full-width">
@@ -1066,128 +1250,136 @@
 {
     return ticketModel.Category switch
     {
-        "Contract Review/Preparation" => "Attach contract for review. If renewal of contract, attach the existing contract with the current draft. For contract preparation, state circumstances, consideration, critical provisions to be included, etc. For both, indicate name of signatories and passport details or other government issued IDs.",
+        "Contract Review/Preparation" => "Attach contract for review. If renewal of contract, attach the existing contract with the current draft. For contract preparation, state circumstances, consideration, critical provisions to be included, etc. Include passport details or other government-issued IDs for the authorized signatories listed above.",
         "Legal Research & Opinion" => "State the legal query.",
-        "Secretary's Certificate" => "State Purpose and other material details for the request. Attach sample of board resolution if any. Indicate name of signatory/ies.",
+        "Secretary's Certificate" => "State Purpose and other material details for the request. Attach sample of board resolution if any. Include passport details or other government-issued IDs for the authorized signatories listed above.",
         _ => "Include as much detail as possible to help us resolve your issue quickly"
     };
 }
 
-    private async Task HandleSubmit()
+private void AddSignatory()
+{
+    ticketModel.AuthorizedSignatories.Add(new AuthorizedSignatory());
+    StateHasChanged();
+}
+
+private void RemoveSignatory(int index)
+{
+    if (ticketModel.AuthorizedSignatories.Count > 1 && index >= 0 && index < ticketModel.AuthorizedSignatories.Count)
     {
-        isSubmitting = true;
-        try
+        ticketModel.AuthorizedSignatories.RemoveAt(index);
+        StateHasChanged();
+        _ = ShowToast("Signatory Removed", "Signatory has been removed from the request.", "info");
+    }
+}
+
+    private async Task HandleSubmit()
+{
+    isSubmitting = true;
+    try
+    {
+        // Build the description with signatory information
+        var description = ticketModel.Description;
+        
+        var ticket = new Ticket
         {
+            AppReferenceNo = ticketModel.AppReferenceNo,
+            RequestDate = ticketModel.RequestDate,
+            Company = ticketModel.Company,
+            Location = ticketModel.Location,
+            DateNeeded = ticketModel.DateNeeded,
+            TimeNeeded = ticketModel.TimeNeeded,
+            Department = ticketModel.Department,
+            Category = ticketModel.Category,
+            Description = description,
+            Status = "Pending",
+            Priority = "Medium",
+            IsDraft = false,
+            CreatedDate = DateTime.Now
+        };
 
-            if (uploadedFiles != null)
+        var createdTicket = await TicketService.CreateTicketAsync(ticket);
+        lastCreatedTicketId = createdTicket.Id;
+
+        if ((ticketModel.Category == "Contract Review/Preparation" || ticketModel.Category == "Secretary's Certificate") 
+            && ticketModel.AuthorizedSignatories.Any())
+        {
+            foreach (var signatory in ticketModel.AuthorizedSignatories)
             {
-                foreach (var file in uploadedFiles)
+                if (!string.IsNullOrWhiteSpace(signatory.Name) && !string.IsNullOrWhiteSpace(signatory.Position))
                 {
-
+                    await TicketService.AddTicketSignatoryAsync(new TicketSignatory
+                    {
+                        TicketId = createdTicket.Id,
+                        SignatoryName = signatory.Name,
+                        SignatoryPosition = signatory.Position,
+                        CreatedDate = DateTime.Now,
+                        IsDeleted = false
+                    });
                 }
             }
+        }
 
-            var ticket = new Ticket
+        // Handle file uploads (existing code)
+        if (uploadedFiles != null && uploadedFiles.Count > 0)
+        {
+            var uploadPath = Path.Combine("wwwroot", "uploads", createdTicket.Id.ToString());
+            Directory.CreateDirectory(uploadPath);
+
+            foreach (var file in uploadedFiles)
             {
-                AppReferenceNo = ticketModel.AppReferenceNo,
-                RequestDate = ticketModel.RequestDate,
-                Company = ticketModel.Company,
-                DateNeeded = ticketModel.DateNeeded,
-                TimeNeeded = ticketModel.TimeNeeded,
-                Department = ticketModel.Department,
-                Category = ticketModel.Category,
-                Description = ticketModel.Description,
-                Status = "Open",
-                IsDraft = false,
-                CreatedDate = DateTime.Now
-            };
-
-            var createdTicket = await TicketService.CreateTicketAsync(ticket);
-            lastCreatedTicketId = createdTicket.Id;
-
-
-            if (uploadedFiles != null && uploadedFiles.Count > 0)
-            {
-
-
-                var uploadPath = Path.Combine("wwwroot", "uploads", createdTicket.Id.ToString());
-
-
-                Directory.CreateDirectory(uploadPath);
-
-
-                foreach (var file in uploadedFiles)
+                try
                 {
-                    try
+                    var uniqueFileName = $"{Guid.NewGuid()}_{file.Name}";
+                    var filePath = Path.Combine(uploadPath, uniqueFileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
                     {
-
-
-                        var uniqueFileName = $"{Guid.NewGuid()}_{file.Name}";
-                        var filePath = Path.Combine(uploadPath, uniqueFileName);
-
-
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(stream);
-                        }
-
-
-                        if (File.Exists(filePath))
-                        {
-                            var fileInfo = new FileInfo(filePath);
-
-                        }
-
-                        var attachment = new TicketAttachment
-                        {
-                            TicketId = createdTicket.Id,
-                            FileName = file.Name,
-                            FilePath = $"/uploads/{createdTicket.Id}/{uniqueFileName}",
-                            ContentType = file.ContentType,
-                            FileSize = file.Size,
-                            UploadedDate = DateTime.Now
-                        };
-
-
-
-                        var savedAttachment = await TicketService.AddAttachmentAsync(attachment);
-
+                        await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(stream);
                     }
-                    catch (Exception fileEx)
+
+                    var attachment = new TicketAttachment
                     {
+                        TicketId = createdTicket.Id,
+                        FileName = file.Name,
+                        FilePath = $"/uploads/{createdTicket.Id}/{uniqueFileName}",
+                        ContentType = file.ContentType,
+                        FileSize = file.Size,
+                        UploadedDate = DateTime.Now
+                    };
 
-
-                        await ShowToast("File Upload Error",
+                    var savedAttachment = await TicketService.AddAttachmentAsync(attachment);
+                }
+                catch (Exception fileEx)
+                {
+                    await ShowToast("File Upload Error",
                         $"Failed to upload {file.Name}: {fileEx.Message}",
                         "error");
-                    }
                 }
             }
-            else
-            {
+        }
 
-            }
-
-            await ShowToast("Ticket Created Successfully!",
+        await ShowToast("Ticket Created Successfully!",
             $"Your ticket #{createdTicket.Id} has been submitted and will be reviewed shortly.",
             "success");
 
-            ticketModel = new CreateTicketModel();
-            uploadedFiles.Clear();
-        }
-        catch (Exception ex)
-        {
-
-            await ShowToast("Error Creating Ticket",
+        showSuccessMessage = true;
+        ticketModel = new CreateTicketModel();
+        ticketModel.AuthorizedSignatories.Add(new AuthorizedSignatory()); // Add default signatory
+        uploadedFiles.Clear();
+    }
+    catch (Exception ex)
+    {
+        await ShowToast("Error Creating Ticket",
             $"An error occurred while creating your ticket: {ex.Message}",
             "error");
-        }
-        finally
-        {
-            isSubmitting = false;
-            StateHasChanged();
-        }
     }
+    finally
+    {
+        isSubmitting = false;
+        StateHasChanged();
+    }
+}
 
     private async Task SaveAsDraft()
     {
@@ -1338,17 +1530,17 @@
     }
 
     protected override void OnInitialized()
+{
+    if (uploadedFiles == null)
     {
-        if (uploadedFiles == null)
-        {
-            uploadedFiles = new List<IBrowserFile>();
-        }
-
-        // Set default values
-        ticketModel.RequestDate = DateTime.Today;
-        ticketModel.DateNeeded = DateTime.Today.AddDays(1);
-        ticketModel.TimeNeeded = new TimeOnly(9, 0);
+        uploadedFiles = new List<IBrowserFile>();
     }
+
+    ticketModel.RequestDate = DateTime.Today;
+    ticketModel.DateNeeded = DateTime.Today.AddDays(1);
+    ticketModel.TimeNeeded = new TimeOnly(9, 0);
+    ticketModel.AuthorizedSignatories.Add(new AuthorizedSignatory());
+}
 
     private void RemoveFile(IBrowserFile file)
     {
@@ -1420,11 +1612,15 @@
         [Required(ErrorMessage = "Company is required")]
         public string Company { get; set; } = "";
 
+        [Required(ErrorMessage = "Location is required")]
+    [StringLength(100, ErrorMessage = "Location must be less than 100 characters")]
+    public string Location { get; set; } = "";
+
         [Required(ErrorMessage = "Date Needed is required")]
         public DateTime DateNeeded { get; set; } = DateTime.Today.AddDays(1);
 
         [Required(ErrorMessage = "Time Needed is required")]
-        public TimeOnly TimeNeeded { get; set; } = new TimeOnly(9, 0); // Default to 9:00 AM
+        public TimeOnly TimeNeeded { get; set; } = new TimeOnly(9, 0);
 
         [Required(ErrorMessage = "Department is required")]
         public string Department { get; set; } = "";
@@ -1435,15 +1631,35 @@
         [Required(ErrorMessage = "Description is required")]
         [StringLength(2000, MinimumLength = 20, ErrorMessage = "Description must be between 20 and 2000 characters")]
         public string Description { get; set; } = "";
+        public List<AuthorizedSignatory> AuthorizedSignatories { get; set; } = new List<AuthorizedSignatory>();
     }
 
+public class AuthorizedSignatory
+{
+    [Required(ErrorMessage = "Name is required")]
+    [StringLength(100, ErrorMessage = "Name must be less than 100 characters")]
+    public string Name { get; set; } = "";
+
+    [Required(ErrorMessage = "Position is required")]
+    [StringLength(100, ErrorMessage = "Position must be less than 100 characters")]
+    public string Position { get; set; } = "";
+}
+
     private void CreateAnotherTicket()
+{
+    lastCreatedTicketId = 0;
+    ticketModel = new CreateTicketModel
     {
-        lastCreatedTicketId = 0;
-        ticketModel = new CreateTicketModel();
-        uploadedFiles.Clear();
-        StateHasChanged();
-    }
+        RequestDate = DateTime.Today,
+        DateNeeded = DateTime.Today.AddDays(1),
+        TimeNeeded = new TimeOnly(9, 0)
+    };
+    
+    ticketModel.AuthorizedSignatories.Add(new AuthorizedSignatory());
+    
+    uploadedFiles.Clear();
+    StateHasChanged();
+}
 
     public class ToastNotification
     {

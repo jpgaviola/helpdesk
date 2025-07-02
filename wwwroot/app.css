@@ -20,10 +20,12 @@
     overflow: hidden;
     width: 100%;
     max-width: 900px;
-    max-height: 90vh; /* Add max-height */
+    max-height: 90vh;
+    /* Add max-height */
     display: grid;
     grid-template-columns: 1fr 1fr;
-    min-height: auto; /* Remove fixed min-height */
+    min-height: auto;
+    /* Remove fixed min-height */
 }
 
 .login-left {
@@ -32,7 +34,8 @@
     align-items: center;
     justify-content: center;
     flex-direction: column;
-    padding: 30px; /* Reduced from 40px */
+    padding: 30px;
+    /* Reduced from 40px */
     color: white;
     position: relative;
     overflow: hidden;
@@ -50,8 +53,13 @@
 }
 
 @keyframes float {
-    0% { transform: translateX(0) translateY(0); }
-    100% { transform: translateX(-60px) translateY(-60px); }
+    0% {
+        transform: translateX(0) translateY(0);
+    }
+
+    100% {
+        transform: translateX(-60px) translateY(-60px);
+    }
 }
 
 .login-left-content {
@@ -67,8 +75,15 @@
 }
 
 @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
 }
 
 .login-left h2 {
@@ -104,7 +119,8 @@
 }
 
 .login-right {
-    padding: 40px 30px; /* Reduced from 60px 50px */
+    padding: 40px 30px;
+    /* Reduced from 60px 50px */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -113,7 +129,8 @@
 
 .login-header {
     text-align: center;
-    margin-bottom: 25px; /* Reduced from 40px */
+    margin-bottom: 25px;
+    /* Reduced from 40px */
 }
 
 .login-header h1 {
@@ -133,7 +150,8 @@
 }
 
 .form-group {
-    margin-bottom: 20px; /* Reduced from 25px */
+    margin-bottom: 20px;
+    /* Reduced from 25px */
     position: relative;
 }
 
@@ -166,7 +184,7 @@
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
-.form-control:focus + .input-icon {
+.form-control:focus+.input-icon {
     color: #ff6b35;
 }
 
@@ -199,7 +217,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px; /* Reduced from 30px */
+    margin-bottom: 25px;
+    /* Reduced from 30px */
     font-size: 14px;
 }
 
@@ -214,14 +233,14 @@
     transform: scale(1.1);
 }
 
-.forgot-password {
+.request-account {
     color: #ff6b35;
     text-decoration: none;
     font-weight: 500;
     transition: color 0.3s ease;
 }
 
-.forgot-password:hover {
+.request-account:hover {
     color: #f7931e;
 }
 
@@ -255,7 +274,7 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
     transition: left 0.5s;
 }
 
@@ -275,7 +294,8 @@
 
 .divider {
     text-align: center;
-    margin: 20px 0; /* Reduced from 30px */
+    margin: 20px 0;
+    /* Reduced from 30px */
     position: relative;
     color: #999;
     font-size: 14px;
@@ -329,12 +349,18 @@
     font-size: 16px;
 }
 
-.google { color: #db4437; }
-.microsoft { color: #0078d4; }
+.google {
+    color: #db4437;
+}
+
+.microsoft {
+    color: #0078d4;
+}
 
 .footer-text {
     text-align: center;
-    margin-top: 20px; /* Reduced from 30px */
+    margin-top: 20px;
+    /* Reduced from 30px */
     font-size: 14px;
     color: #666;
 }
@@ -369,8 +395,13 @@
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Error/Success message styling */

@@ -15,12 +15,18 @@ namespace HelpdeskBlazor.Services
 
         public async Task<List<Ticket>> GetAllTicketsAsync()
         {
-            return await _context.Tickets
-                .Include(t => t.AssignedToUser)
-                .Include(t => t.CreatedByUser)
-                .Where(t => !t.IsDeleted)
-                .OrderByDescending(t => t.CreatedDate)
-                .ToListAsync();
+            try
+            {
+                return await _context.Tickets
+                    .Where(t => !t.IsDeleted)
+                    .OrderByDescending(t => t.CreatedDate)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAllTicketsAsync: {ex.Message}");
+                return new List<Ticket>();
+            }
         }
 
         public async Task<Ticket?> GetTicketByIdAsync(int id)
@@ -31,6 +37,7 @@ namespace HelpdeskBlazor.Services
                 .Include(t => t.Attachments)
                 .Include(t => t.Comments)
                     .ThenInclude(c => c.CreatedByUser)
+                .Include(t => t.Signatories) // Add this line
                 .Where(t => t.Id == id && !t.IsDeleted)
                 .FirstOrDefaultAsync();
         }
@@ -39,7 +46,7 @@ namespace HelpdeskBlazor.Services
         {
             ticket.CreatedDate = DateTime.Now;
             ticket.IsDeleted = false;
-            
+
             _context.Tickets.Add(ticket);
             await _context.SaveChangesAsync();
             return ticket;
@@ -48,7 +55,7 @@ namespace HelpdeskBlazor.Services
         public async Task<Ticket> UpdateTicketAsync(Ticket ticket)
         {
             ticket.ModifiedDate = DateTime.Now;
-            
+
             _context.Tickets.Update(ticket);
             await _context.SaveChangesAsync();
             return ticket;
@@ -61,7 +68,7 @@ namespace HelpdeskBlazor.Services
 
             ticket.IsDeleted = true;
             ticket.ModifiedDate = DateTime.Now;
-            
+
             await _context.SaveChangesAsync();
             return true;
         }
@@ -104,11 +111,13 @@ namespace HelpdeskBlazor.Services
             return await _context.Tickets
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.CreatedByUser)
-                .Where(t => !t.IsDeleted && 
-                    (t.Subject.Contains(searchTerm) || 
+                .Where(t => !t.IsDeleted &&
+                    (t.Subject.Contains(searchTerm) ||
                      t.Description.Contains(searchTerm) ||
-                     t.RequesterName.Contains(searchTerm) ||
-                     t.RequesterEmail.Contains(searchTerm)))
+                     t.Department.Contains(searchTerm) ||
+                     t.Category.Contains(searchTerm) ||
+                     (t.Company != null && t.Company.Contains(searchTerm)) ||
+                     (t.AppReferenceNo != null && t.AppReferenceNo.Contains(searchTerm))))
                 .OrderByDescending(t => t.CreatedDate)
                 .ToListAsync();
         }
@@ -120,7 +129,7 @@ namespace HelpdeskBlazor.Services
 
             ticket.AssignedToUserId = userId;
             ticket.ModifiedDate = DateTime.Now;
-            
+
             if (ticket.Status == "Open")
                 ticket.Status = "In Progress";
 
@@ -148,7 +157,7 @@ namespace HelpdeskBlazor.Services
         public async Task<TicketAttachment> AddAttachmentAsync(TicketAttachment attachment)
         {
             attachment.UploadedDate = DateTime.Now;
-            
+
             _context.TicketAttachments.Add(attachment);
             await _context.SaveChangesAsync();
             return attachment;
@@ -158,10 +167,28 @@ namespace HelpdeskBlazor.Services
         {
             comment.CreatedDate = DateTime.Now;
             comment.IsDeleted = false;
-            
+
             _context.TicketComments.Add(comment);
             await _context.SaveChangesAsync();
             return comment;
+        }
+
+        public async Task<TicketSignatory> AddTicketSignatoryAsync(TicketSignatory ticketSignatory)
+        {
+            ticketSignatory.CreatedDate = DateTime.Now;
+            ticketSignatory.IsDeleted = false;
+
+            _context.TicketSignatories.Add(ticketSignatory);
+            await _context.SaveChangesAsync();
+            return ticketSignatory;
+        }
+
+        public async Task<List<TicketSignatory>> GetTicketSignatoriesAsync(int ticketId)
+        {
+            return await _context.TicketSignatories
+                .Where(ts => ts.TicketId == ticketId && !ts.IsDeleted)
+                .OrderBy(ts => ts.CreatedDate)
+                .ToListAsync();
         }
     }
 }

@@ -7,6 +7,7 @@
 @using HelpdeskBlazor.Models
 @using System.ComponentModel.DataAnnotations
 @using Microsoft.AspNetCore.Components.Forms
+@inject HelpdeskBlazor.Services.IDocumentRequestService DocumentRequestService
 
 <style>
     .tickets-container {
@@ -265,23 +266,11 @@
         letter-spacing: 0.5px;
     }
 
-    .status-open { background: #d4edda; color: #155724; }
     .status-pending { background: #fff3cd; color: #856404; }
-    .status-closed { background: #f8d7da; color: #721c24; }
-    .status-resolved { background: #d1ecf1; color: #0c5460; }
-
-    .priority-badge {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .priority-high { background: #ffebee; color: #c62828; }
-    .priority-medium { background: #fff8e1; color: #f57c00; }
-    .priority-low { background: #e8f5e8; color: #2e7d32; }
+    .status-AcknowledgeRequest { background: #d4edda; color: #155724; }
+    .status-EndorseRequest { background: #d1ecf1; color: #0c5460; }
+    .status-CancelRequest { background: #f8d7da; color: #721c24; }
+    .status-RejectRequest { background: #f8d7da; color: #686465; }
 
     .actions-dropdown {
         position: relative;
@@ -751,6 +740,54 @@
 .description-section {
     grid-column: 1 / -1;
 }
+
+.type-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.type-badge i {
+    font-size: 10px;
+}
+
+.type-ticket { 
+    background: #e3f2fd; 
+    color: #1565c0; 
+}
+
+.type-document { 
+    background: #f3e5f5; 
+    color: #7b1fa2; 
+}
+
+.signatories-list {
+    margin-top: 8px;
+}
+
+.signatory-item-display {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.signatory-item-display:last-child {
+    margin-bottom: 0;
+}
+
+.signatory-item-display strong {
+    color: #0A1A28;
+    font-weight: 600;
+}
 </style>
 
 <div class="tickets-container">
@@ -760,51 +797,53 @@
             <i class="fas fa-ticket-alt"></i>
             All Tickets
         </h1>
-        <p class="page-subtitle">Manage and track all support tickets</p>
+        <p class="page-subtitle">Manage and track all request tickets & documents</p>
     </div>
 
     <!-- Toolbar -->
     <div class="tickets-toolbar">
-        <div class="toolbar-left">
-            <div class="search-box">
-                <input type="text" class="search-input" placeholder="Search tickets..." @bind="searchTerm" @oninput="OnSearchChanged" />
-                <i class="fas fa-search search-icon"></i>
-            </div>
-            <select class="filter-dropdown" @bind="statusFilter" @bind:after="OnFilterChanged">
-                <option value="">All Status</option>
-                <option value="Open">Open</option>
-                <option value="Pending">Pending</option>
-                <option value="Resolved">Resolved</option>
-                <option value="Closed">Closed</option>
-            </select>
-            <select class="filter-dropdown" @bind="priorityFilter" @bind:after="OnFilterChanged">
-                <option value="">All Priority</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
-                <option value="Low">Low</option>
-            </select>
+    <div class="toolbar-left">
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="Search requests..." @bind="searchTerm" @oninput="OnSearchChanged" />
+            <i class="fas fa-search search-icon"></i>
         </div>
+             <select class="filter-dropdown" @bind="typeFilter" @bind:after="OnFilterChanged">
+            <option value="">All Types</option>
+            <option value="Ticket">Legal Tickets</option>
+            <option value="Document">Document Requests</option>
+        </select>
+        
+        <select class="filter-dropdown" @bind="statusFilter" @bind:after="OnFilterChanged">
+            <option value="">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="Acknowledge Request">Acknowledge Request</option>
+            <option value="Endorse Request">Endorse Request</option>
+            <option value="Cancel Request"> Cancel Request</option>
+            <option value="Reject Request">  Reject Request</option>
+        </select>
     </div>
+</div>
+
 
     <!-- Stats Cards -->
     <div class="tickets-stats">
-        <div class="stat-card total">
-            <div class="stat-number">@GetTotalTickets()</div>
-            <div class="stat-label">Total Tickets</div>
-        </div>
-        <div class="stat-card open">
-            <div class="stat-number">@GetTicketsByStatus("Open")</div>
-            <div class="stat-label">Open Tickets</div>
-        </div>
-        <div class="stat-card pending">
-            <div class="stat-number">@GetTicketsByStatus("Pending")</div>
-            <div class="stat-label">Pending Tickets</div>
-        </div>
-        <div class="stat-card closed">
-            <div class="stat-number">@GetTicketsByStatus("Closed")</div>
-            <div class="stat-label">Closed Tickets</div>
-        </div>
+    <div class="stat-card total">
+        <div class="stat-number">@GetTotalRequests()</div>
+        <div class="stat-label">Total Requests</div>
     </div>
+    <div class="stat-card open">
+        <div class="stat-number">@GetRequestsByStatus("Open")</div>
+        <div class="stat-label">Open Requests</div>
+    </div>
+    <div class="stat-card pending">
+        <div class="stat-number">@GetRequestsByStatus("Pending")</div>
+        <div class="stat-label">Pending Requests</div>
+    </div>
+    <div class="stat-card closed">
+        <div class="stat-number">@(GetRequestsByStatus("Closed") + GetRequestsByStatus("Resolved"))</div>
+        <div class="stat-label">Completed Requests</div>
+    </div>
+</div>
 
     <!-- Tickets Table -->
     <div class="tickets-table-container">
@@ -812,283 +851,223 @@
             <h3 class="table-title">Tickets List</h3>
         </div>
 
-        @if (filteredTickets.Any())
-        {
-            <table class="tickets-table">
-                <thead>
-                    <tr>
-                        <th class="center" style="width: 40px;"></th>
-                        <th class="center">ID</th>
-                        <th class="center">Subject</th>
-                        <th class="center">Status</th>
-                        <th class="center">Priority</th>
-                        <th class="center">Requester</th>
-                        <th class="center">Assigned To</th>
-                        <th class="center">Created</th>
-                        <th class="center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var ticket in GetPaginatedTickets())
+        @if (filteredRequests.Any())
 {
-    <!-- Main ticket row -->
-    <tr>
-        <td class="center">
-            <button class="expand-btn @(expandedTickets.Contains(ticket.Id) ? "expanded" : "")" 
-                    @onclick="() => ToggleTicketDetails(ticket.Id)">
-                <i class="fas fa-chevron-right"></i>
+    <table class="tickets-table">
+        <thead>
+            <tr>
+                <th class="center" style="width: 40px;"></th>
+                <th class="center">Type</th>
+                <th class="center">ID</th>
+                <th class="center">Status</th>
+                <th class="center">Requester</th>
+                <th class="center">Company</th>
+                <th class="center">Created</th>
+                <th class="center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var request in GetPaginatedRequests())
+            {
+                <!-- Main request row -->
+                <tr>
+                    <td class="center">
+                        <button class="expand-btn @(expandedTickets.Contains(request.Id) ? "expanded" : "")" 
+                                @onclick="() => ToggleRequestDetails(request.Id)">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </td>
+                    <td class="center">
+                        <span class="type-badge type-@request.Type.ToLower()">
+                            @if (request.Type == "Ticket")
+                            {
+                                <i class="fas fa-ticket-alt"></i>
+                                <span>Legal</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-file-alt"></i>
+                                <span>Document</span>
+                            }
+                        </span>
+                    </td>
+                    <td class="center">
+                        <a class="ticket-id">#@request.Id</a>
+                    </td>
+                    <td class="center">
+                        <span class="status-badge status-@request.Status.ToLower()">@request.Status</span>
+                    </td>
+                    <td class="center">@request.RequesterName</td>
+                    <td class="center">@(request.Company ?? "N/A")</td>
+                    <td class="center">@request.CreatedDate.ToString("MMM dd, yyyy")</td>
+                    <td class="center">
+                        <div class="actions-dropdown">
+                            <button class="actions-btn" @onclick="() => ToggleActionsMenu(request.Id)" @onclick:stopPropagation="true">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <div class="actions-menu @(activeDropdown == request.Id ? "show" : "")">
+                                <button class="actions-menu-item danger" @onclick="() => DeleteRequest(request)" @onclick:stopPropagation="true">
+                                    <i class="fas fa-trash"></i>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+            <!-- Expandable details row -->
+            <tr class="ticket-details-row @(expandedTickets.Contains(request.Id) ? "show" : "")">
+                <td colspan="10">
+                    <div class="ticket-details-content">
+                        <div class="detail-grid">
+                            @if (request.Type == "Document")
+                            {
+                                <div class="detail-section">
+                                    <div class="detail-label">Document Name</div>
+                                    <div class="detail-value">@request.DocumentName</div>
+                                </div>
+                                <div class="detail-section">
+                                    <div class="detail-label">Type</div>
+                                    <div class="detail-value">@request.DocumentType</div>
+                                </div>
+                                <div class="detail-section">
+                                    <div class="detail-label">Number of Copies</div>
+                                    <div class="detail-value">@request.NumberOfCopies</div>
+                                </div>
+                            }
+                            
+                            @if (request.Type == "Ticket")
+                            {
+                                <div class="detail-section">
+                                    <div class="detail-label">Department</div>
+                                    <div class="detail-value">@request.Department</div>
+                                </div>
+                                <div class="detail-section">
+                                    <div class="detail-label">Category</div>
+                                    <div class="detail-value">@request.Category</div>
+                                </div>
+                            }
+                            
+                            <div class="detail-section">
+                                <div class="detail-label">Company</div>
+                                <div class="detail-value">@(request.Company ?? "N/A")</div>
+                            </div>
+                            
+                            @if (request.Type == "Ticket")
+                            {
+                                <div class="detail-section">
+                                    <div class="detail-label">Location</div>
+                                    <div class="detail-value">@(request.Location ?? "N/A")</div>
+                                </div>
+                            }
+                            
+                            <div class="detail-section">
+                                <div class="detail-label">Requester Email</div>
+                                <div class="detail-value">@request.RequesterEmail</div>
+                            </div>
+                            
+                            @if (request.DateNeeded.HasValue)
+                            {
+                                <div class="detail-section">
+                                    <div class="detail-label">Date & Time Needed</div>
+                                    <div class="detail-value">
+                                        @request.DateNeeded.Value.ToString("MMMM dd, yyyy")
+                                        @if (request.TimeNeeded.HasValue)
+                                        {
+                                            <span>at @request.TimeNeeded.Value.ToString("hh:mm tt")</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(request.AppReferenceNo))
+                            {
+                                <div class="detail-section">
+                                    <div class="detail-label">APP Reference No.</div>
+                                    <div class="detail-value">@request.AppReferenceNo</div>
+                                </div>
+                            }
+                            
+                            <!-- Description moved here to be beside APP Reference No. -->
+                            <div class="detail-section">
+                                <div class="detail-label">@(request.Type == "Document" ? "Particulars/Reason" : "Description")</div>
+                                <div class="detail-value">@request.Description</div>
+                            </div>
+                        </div>
+
+                        <!-- Signatories Section -->
+                        @if (request.Type == "Ticket" && (request.Category == "Contract Review/Preparation" || request.Category == "Secretary's Certificate"))
+                        {
+                            <div class="detail-section description-section">
+                                <div class="detail-label">Authorized Signatories</div>
+                                <div class="detail-value">
+                                    @if (GetSignatoriesForTicket(request.Id).Any())
+                                    {
+                                        <div class="signatories-list">
+                                            @foreach (var signatory in GetSignatoriesForTicket(request.Id))
+                                            {
+                                                <div class="signatory-item-display">
+                                                    <strong>@signatory.SignatoryName</strong> - @signatory.SignatoryPosition
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <em>No signatories found</em>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+
+    <!-- Update pagination info -->
+    <div class="pagination">
+        <div class="pagination-info">
+            Showing @((currentPage - 1) * pageSize + 1) to @(Math.Min(currentPage * pageSize, filteredRequests.Count)) of @filteredRequests.Count requests
+        </div>
+        <div class="pagination-controls">
+            <button class="pagination-btn" @onclick="PreviousPage" disabled="@(currentPage <= 1)">
+                <i class="fas fa-chevron-left"></i> Previous
             </button>
-        </td>
-        <td class="center">
-            <a class="ticket-id">#@ticket.Id</a>
-        </td>
-        <td class="center">
-            <div class="ticket-subject" title="@ticket.Subject">@ticket.Subject</div>
-        </td>
-        <td class="center">
-            <span class="status-badge status-@ticket.Status.ToLower()">@ticket.Status</span>
-        </td>
-        <td class="center">
-            <span class="priority-badge priority-@ticket.Priority.ToLower()">@ticket.Priority</span>
-        </td>
-        <td class="center">@ticket.RequesterName</td>
-        <td class="center">@(ticket.AssignedToUser?.Email ?? "Unassigned")</td>
-        <td class="center">@ticket.CreatedDate.ToString("MMM dd, yyyy")</td>
-        <td class="center">
-            <div class="actions-dropdown">
-                <button class="actions-btn" @onclick="() => ToggleActionsMenu(ticket.Id)" @onclick:stopPropagation="true">
-                    <i class="fas fa-ellipsis-v"></i>
-                </button>
-                <div class="actions-menu @(activeDropdown == ticket.Id ? "show" : "")">
-                    <button class="actions-menu-item" @onclick="() => EditTicket(ticket.Id)" @onclick:stopPropagation="true">
-                        <i class="fas fa-edit"></i>
-                        Edit Ticket
-                    </button>
-                    <button class="actions-menu-item" @onclick="() => AssignTicket(ticket.Id)" @onclick:stopPropagation="true">
-                        <i class="fas fa-user-plus"></i>
-                        Assign
-                    </button>
-
-                    <button class="actions-menu-item danger" @onclick="() => DeleteTicket(ticket.Id)" @onclick:stopPropagation="true">
-                        <i class="fas fa-trash"></i>
-                        Delete
-                    </button>
-                </div>
-            </div>
-        </td>
-    </tr>
-
-    <!-- Expandable details row -->
-    <tr class="ticket-details-row @(expandedTickets.Contains(ticket.Id) ? "show" : "")">
-        <td colspan="9">
-            <div class="ticket-details-content">
-                <div class="detail-grid">
-                    <div class="detail-section">
-                        <div class="detail-label">Department</div>
-                        <div class="detail-value">@ticket.Department</div>
-                    </div>
-                    <div class="detail-section">
-                        <div class="detail-label">Category</div>
-                        <div class="detail-value">@ticket.Category</div>
-                    </div>
-                    <div class="detail-section">
-                        <div class="detail-label">Requester Email</div>
-                        <div class="detail-value">@ticket.RequesterEmail</div>
-                    </div>
-                    <div class="detail-section">
-                        <div class="detail-label">Created Date</div>
-                        <div class="detail-value">@ticket.CreatedDate.ToString("MMMM dd, yyyy 'at' hh:mm tt")</div>
-                    </div>
-                </div>
-                <div class="detail-section description-section">
-                    <div class="detail-label">Description</div>
-                    <div class="detail-value">@ticket.Description</div>
-                </div>
-                @if (!string.IsNullOrEmpty(ticket.Resolution))
-                {
-                    <div class="detail-section description-section">
-                        <div class="detail-label">Resolution</div>
-                        <div class="detail-value">@ticket.Resolution</div>
-                    </div>
-                }
-            </div>
-        </td>
-    </tr>
-}
-                </tbody>
-            </table>
-
-            <!-- Pagination -->
-            <div class="pagination">
-                <div class="pagination-info">
-                    Showing @((currentPage - 1) * pageSize + 1) to @(Math.Min(currentPage * pageSize, filteredTickets.Count)) of @filteredTickets.Count tickets
-                </div>
-                <div class="pagination-controls">
-                    <button class="pagination-btn" @onclick="PreviousPage" disabled="@(currentPage <= 1)">
-                        <i class="fas fa-chevron-left"></i> Previous
-                    </button>
-                    <button class="pagination-btn" @onclick="NextPage" disabled="@(currentPage >= GetTotalPages())">
-                        Next <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
-            </div>
-        }
-        else
-        {
-            <div class="empty-state">
-                <i class="fas fa-inbox"></i>
-                <h3>No Tickets Found</h3>
-                <p>@(string.IsNullOrEmpty(searchTerm) ? "There are no tickets to display." : "No tickets match your search criteria.")</p>
-            </div>
-        }
-    </div>
-
-    <!-- Edit Ticket Modal -->
-<div class="modal-overlay @(showEditModal ? "show" : "")" @onclick="CloseEditModal">
-    <div class="modal-content" @onclick:stopPropagation="true">
-        <div class="modal-header">
-            <h3 class="modal-title">Edit Ticket #@(editTicketModel?.Id ?? 0)</h3>
-            <button class="modal-close" @onclick="CloseEditModal">
-                <i class="fas fa-times"></i>
+            <button class="pagination-btn" @onclick="NextPage" disabled="@(currentPage >= GetTotalPages())">
+                Next <i class="fas fa-chevron-right"></i>
             </button>
         </div>
-        
-        @if (editTicketModel != null)
-        {
-            <EditForm Model="editTicketModel" OnValidSubmit="HandleEditSubmit">
-                <DataAnnotationsValidator />
-                
-                <div class="modal-body">
-                    <!-- Basic Information Row -->
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label required">Requester Name</label>
-                            <InputText @bind-Value="editTicketModel.RequesterName" class="form-input" />
-                            <ValidationMessage For="@(() => editTicketModel.RequesterName)" class="error-message" />
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label required">Email Address</label>
-                            <InputText @bind-Value="editTicketModel.RequesterEmail" class="form-input" type="email" />
-                            <ValidationMessage For="@(() => editTicketModel.RequesterEmail)" class="error-message" />
-                        </div>
-                    </div>
-
-                    <!-- Department and Category Row -->
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label required">Department</label>
-                            <InputSelect @bind-Value="editTicketModel.Department" class="form-select">
-                                <option value="">Select Department</option>
-                                <option value="IT">Information Technology</option>
-                                <option value="HR">Human Resources</option>
-                                <option value="Finance">Finance</option>
-                                <option value="Operations">Operations</option>
-                                <option value="Facilities">Facilities</option>
-                                <option value="Security">Security</option>
-                            </InputSelect>
-                            <ValidationMessage For="@(() => editTicketModel.Department)" class="error-message" />
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label required">Category</label>
-                            <InputSelect @bind-Value="editTicketModel.Category" class="form-select">
-                                <option value="">Select Category</option>
-                                <option value="Hardware">Hardware Issue</option>
-                                <option value="Software">Software Issue</option>
-                                <option value="Network">Network/Connectivity</option>
-                                <option value="Account">Account Access</option>
-                                <option value="Request">Service Request</option>
-                                <option value="Other">Other</option>
-                            </InputSelect>
-                            <ValidationMessage For="@(() => editTicketModel.Category)" class="error-message" />
-                        </div>
-                    </div>
-
-                    <!-- Subject -->
-                    <div class="form-group">
-                        <label class="form-label required">Subject</label>
-                        <InputText @bind-Value="editTicketModel.Subject" class="form-input" />
-                        <ValidationMessage For="@(() => editTicketModel.Subject)" class="error-message" />
-                    </div>
-
-                    <!-- Priority and Status Row -->
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label required">Priority</label>
-                            <InputSelect @bind-Value="editTicketModel.Priority" class="form-select">
-                                <option value="">Select Priority</option>
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
-                            </InputSelect>
-                            <ValidationMessage For="@(() => editTicketModel.Priority)" class="error-message" />
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label required">Status</label>
-                            <InputSelect @bind-Value="editTicketModel.Status" class="form-select">
-                                <option value="Open">Open</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Resolved">Resolved</option>
-                                <option value="Closed">Closed</option>
-                            </InputSelect>
-                            <ValidationMessage For="@(() => editTicketModel.Status)" class="error-message" />
-                        </div>
-                    </div>
-
-                    <!-- Description -->
-                    <div class="form-group">
-                        <label class="form-label required">Description</label>
-                        <InputTextArea @bind-Value="editTicketModel.Description" class="form-textarea" 
-                            placeholder="Provide detailed information about the issue..." />
-                        <ValidationMessage For="@(() => editTicketModel.Description)" class="error-message" />
-                    </div>
-
-                    <!-- Resolution (only show if status is Resolved or Closed) -->
-                    @if (editTicketModel.Status == "Resolved" || editTicketModel.Status == "Closed")
-                    {
-                        <div class="form-group">
-                            <label class="form-label">Resolution</label>
-                            <InputTextArea @bind-Value="editTicketModel.Resolution" class="form-textarea" 
-                                placeholder="Describe how the issue was resolved..." />
-                        </div>
-                    }
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="CloseEditModal">
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn btn-primary" disabled="@isEditSubmitting">
-                        @if (isEditSubmitting)
-                        {
-                            <div class="loading-spinner"></div>
-                            <span>Updating...</span>
-                        }
-                        else
-                        {
-                            <i class="fas fa-save"></i>
-                            <span>Update Ticket</span>
-                        }
-                    </button>
-                </div>
-            </EditForm>
-        }
     </div>
-</div>
+}
+else
+{
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <h3>No Requests Found</h3>
+        <p>@(string.IsNullOrEmpty(searchTerm) ? "There are no requests to display." : "No requests match your search criteria.")</p>
+    </div>
+}
+    </div>
 </div>
 
 <div class="dropdown-overlay @(activeDropdown != 0 ? "show" : "")" @onclick="CloseActionsMenu" @onclick:stopPropagation="true"></div>
 
 @code {
-    // Sample data - replace with your actual data service
-    private List<Ticket> tickets = new List<Ticket>();
-    private List<Ticket> filteredTickets = new List<Ticket>();
+    // Properties and Fields
+    private Dictionary<int, List<TicketSignatory>> ticketSignatories = new Dictionary<int, List<TicketSignatory>>();
+    private List<UnifiedRequestModel> allRequests = new List<UnifiedRequestModel>();
+    private List<UnifiedRequestModel> filteredRequests = new List<UnifiedRequestModel>();
+    private List<TicketSignatory> GetSignatoriesForTicket(int ticketId)
+{
+    return ticketSignatories.ContainsKey(ticketId) ? ticketSignatories[ticketId] : new List<TicketSignatory>();
+}
     
     private string searchTerm = "";
     private string statusFilter = "";
     private string priorityFilter = "";
+    private string typeFilter = "";
     private string sortColumn = "CreatedDate";
     private string sortDirection = "desc";
     
@@ -1097,214 +1076,193 @@
     private int activeDropdown = 0;
     private bool showEditModal = false;
     private bool isEditSubmitting = false;
-    private EditTicketModel? editTicketModel = null;
     private HashSet<int> expandedTickets = new HashSet<int>();
-    private void ToggleTicketDetails(int ticketId)
-{
-    if (expandedTickets.Contains(ticketId))
-    {
-        expandedTickets.Remove(ticketId);
-    }
-    else
-    {
-        expandedTickets.Add(ticketId);
-    }
-    StateHasChanged();
-}
 
-    private async Task EditTicket(int ticketId)
-{
-    CloseActionsMenu();
-    try
-    {
-        var ticket = await TicketService.GetTicketByIdAsync(ticketId);
-        if (ticket != null)
-        {
-            editTicketModel = new EditTicketModel
-            {
-                Id = ticket.Id,
-                RequesterName = ticket.RequesterName,
-                RequesterEmail = ticket.RequesterEmail,
-                Department = ticket.Department,
-                Category = ticket.Category,
-                Subject = ticket.Subject,
-                Priority = ticket.Priority,
-                Status = ticket.Status,
-                Description = ticket.Description,
-                Resolution = ticket.Resolution ?? ""
-            };
-            showEditModal = true;
-        }
-    }
-    catch (Exception ex)
-    {
-        await JSRuntime.InvokeVoidAsync("alert", $"Error loading ticket: {ex.Message}");
-    }
-}
-
-// Add these new methods:
-private void CloseEditModal()
-{
-    showEditModal = false;
-    editTicketModel = null;
-    isEditSubmitting = false;
-    StateHasChanged();
-}
-
-private async Task HandleEditSubmit()
-{
-    if (editTicketModel == null) return;
-    
-    isEditSubmitting = true;
-    StateHasChanged();
-
-    try
-    {
-        var ticket = await TicketService.GetTicketByIdAsync(editTicketModel.Id);
-        if (ticket != null)
-        {
-            // Update ticket properties
-            ticket.RequesterName = editTicketModel.RequesterName;
-            ticket.RequesterEmail = editTicketModel.RequesterEmail;
-            ticket.Department = editTicketModel.Department;
-            ticket.Category = editTicketModel.Category;
-            ticket.Subject = editTicketModel.Subject;
-            ticket.Priority = editTicketModel.Priority;
-            ticket.Status = editTicketModel.Status;
-            ticket.Description = editTicketModel.Description;
-            ticket.Resolution = editTicketModel.Resolution;
-            ticket.ModifiedDate = DateTime.Now;
-
-            // Set resolved/closed dates based on status
-            if (editTicketModel.Status == "Resolved" && ticket.ResolvedDate == null)
-            {
-                ticket.ResolvedDate = DateTime.Now;
-            }
-            else if (editTicketModel.Status != "Resolved")
-            {
-                ticket.ResolvedDate = null;
-            }
-
-            if (editTicketModel.Status == "Closed" && ticket.ClosedDate == null)
-            {
-                ticket.ClosedDate = DateTime.Now;
-            }
-            else if (editTicketModel.Status != "Closed")
-            {
-                ticket.ClosedDate = null;
-            }
-
-            await TicketService.UpdateTicketAsync(ticket);
-            await LoadTicketsAsync(); // Reload the tickets list
-            FilterAndSortTickets();
-            
-            CloseEditModal();
-            await JSRuntime.InvokeVoidAsync("alert", "Ticket updated successfully!");
-        }
-    }
-    catch (Exception ex)
-    {
-        await JSRuntime.InvokeVoidAsync("alert", $"Error updating ticket: {ex.Message}");
-    }
-    finally
-    {
-        isEditSubmitting = false;
-        StateHasChanged();
-    }
-}
-
+    // Initialization
     protected override async Task OnInitializedAsync()
-{
-    await LoadTicketsAsync();
-}
+    {
+        await LoadAllRequestsAsync();
+    }
 
-    private async Task LoadTicketsAsync()
+    // Data Loading
+   private async Task LoadAllRequestsAsync()
 {
     try
     {
-        // Load all tickets from database
-        tickets = await TicketService.GetAllTicketsAsync();
-        FilterAndSortTickets();
+        var unifiedList = new List<UnifiedRequestModel>();
+        
+        Console.WriteLine("=== Starting to load data ===");
+        
+        // Load tickets
+        Console.WriteLine("=== Loading tickets ===");
+        var tickets = await TicketService.GetAllTicketsAsync();
+        Console.WriteLine($"Received {tickets.Count} tickets from service");
+        
+        foreach (var ticket in tickets)
+        {
+            Console.WriteLine($"Processing ticket - ID: {ticket.Id}, Subject: '{ticket.Subject}', Status: '{ticket.Status}'");
+            
+            try
+            {
+                var signatories = await TicketService.GetTicketSignatoriesAsync(ticket.Id);
+                ticketSignatories[ticket.Id] = signatories;
+                
+                var ticketRequest = new UnifiedRequestModel
+                {
+                    Id = ticket.Id,
+                    Type = "Ticket",
+                    Subject = ticket.Subject ?? $"Legal Ticket #{ticket.Id}",
+                    RequesterName = "Legal Department",
+                    RequesterEmail = "legal@company.com",
+                    Status = ticket.Status ?? "Pending",
+                    Department = ticket.Department ?? "Legal",
+                    Category = ticket.Category ?? "Legal Request",
+                    CreatedDate = ticket.CreatedDate,
+                    Description = ticket.Description ?? "No description",            
+                    Company = ticket.Company ?? "N/A",
+                    Location = ticket.Location ?? "N/A",
+                    DateNeeded = ticket.DateNeeded,
+                    TimeNeeded = ticket.TimeNeeded,
+                    AppReferenceNo = ticket.AppReferenceNo,
+                    RequestDate = ticket.RequestDate,
+                    // Tickets don't have document properties
+                    DocumentName = null,
+                    DocumentType = null,
+                    NumberOfCopies = null
+                };
+                
+                unifiedList.Add(ticketRequest);
+                Console.WriteLine($"Successfully added ticket {ticket.Id} to unified list");
+            }
+            catch (Exception ticketEx)
+            {
+                Console.WriteLine($"Error processing ticket {ticket.Id}: {ticketEx.Message}");
+            }
+        }
+        
+        Console.WriteLine($"=== Tickets processed: {unifiedList.Count(r => r.Type == "Ticket")} ===");
+        Console.WriteLine("=== Loading document requests ===");
+        var documentRequests = await DocumentRequestService.GetAllDocumentRequestsAsync();
+        Console.WriteLine($"Found {documentRequests.Count} document requests");
+        
+        foreach (var docReq in documentRequests)
+        {
+            var subject = $"Document Request #{docReq.Id} - {docReq.Company}";
+            var firstDocItem = docReq.DocumentItems?.FirstOrDefault();
+            
+            unifiedList.Add(new UnifiedRequestModel
+            {
+                Id = docReq.Id,
+                Type = "Document",
+                Subject = subject,
+                RequesterName = "System User",
+                RequesterEmail = "system@company.com",
+                Status = docReq.Status ?? "Pending",
+                Department = "Legal",
+                Category = "Document Request",
+                CreatedDate = docReq.CreatedDate,
+                Description = docReq.Particulars ?? "No particulars provided",
+                Company = docReq.Company ?? "Unknown Company",
+                DateNeeded = docReq.DateNeeded,
+                TimeNeeded = docReq.TimeNeeded,
+                DocumentName = firstDocItem?.DocumentName ?? "N/A",
+                DocumentType = firstDocItem?.Type ?? "N/A",
+                NumberOfCopies = firstDocItem?.NumberOfCopies ?? 0
+            });
+        }
+        
+        Console.WriteLine($"=== Total unified list count: {unifiedList.Count} ===");
+        Console.WriteLine($"=== Tickets in list: {unifiedList.Count(r => r.Type == "Ticket")} ===");
+        Console.WriteLine($"=== Documents in list: {unifiedList.Count(r => r.Type == "Document")} ===");
+        
+        allRequests = unifiedList;
+        filteredRequests = allRequests.ToList();
+        
+        Console.WriteLine($"=== Final filteredRequests count: {filteredRequests.Count} ===");
+        
+        await InvokeAsync(StateHasChanged);
     }
     catch (Exception ex)
     {
-        // Handle error - you might want to show a toast or error message
-        Console.WriteLine($"Error loading tickets: {ex.Message}");
-        tickets = new List<Ticket>(); // Fallback to empty list
+        Console.WriteLine($"MAJOR ERROR in LoadAllRequestsAsync: {ex.Message}");
+        Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        allRequests = new List<UnifiedRequestModel>();
+        filteredRequests = new List<UnifiedRequestModel>();
     }
 }
 
+    // Filtering and Sorting
     private void OnSearchChanged(ChangeEventArgs e)
     {
         searchTerm = e.Value?.ToString() ?? "";
         currentPage = 1;
-        FilterAndSortTickets();
+        FilterAndSortRequests();
     }
 
     private void OnFilterChanged()
     {
         currentPage = 1;
-        FilterAndSortTickets();
+        FilterAndSortRequests();
     }
 
-    private void SortBy(string column)
+    private void FilterAndSortRequests()
     {
-        if (sortColumn == column)
-        {
-            sortDirection = sortDirection == "asc" ? "desc" : "asc";
-        }
-        else
-        {
-            sortColumn = column;
-            sortDirection = "asc";
-        }
-        FilterAndSortTickets();
-    }
-
-    private void FilterAndSortTickets()
-    {
-        var query = tickets.AsQueryable();
+        var query = allRequests.AsQueryable();
 
         // Apply search filter
         if (!string.IsNullOrEmpty(searchTerm))
         {
-           query = query.Where(t => t.Subject.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                       t.RequesterName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                       t.RequesterEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                       t.Id.ToString().Contains(searchTerm));
+            query = query.Where(r => r.Subject.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        r.RequesterName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        r.RequesterEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                        r.Id.ToString().Contains(searchTerm) ||
+                        (r.Company != null && r.Company.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)));
+        }
+
+        // Apply type filter
+        if (!string.IsNullOrEmpty(typeFilter))
+        {
+            query = query.Where(r => r.Type == typeFilter);
         }
 
         // Apply status filter
         if (!string.IsNullOrEmpty(statusFilter))
         {
-            query = query.Where(t => t.Status == statusFilter);
+            query = query.Where(r => r.Status == statusFilter);
         }
 
         // Apply priority filter
         if (!string.IsNullOrEmpty(priorityFilter))
         {
-            query = query.Where(t => t.Priority == priorityFilter);
+            query = query.Where(r => r.Priority == priorityFilter);
         }
 
         // Apply sorting
         query = sortColumn switch
         {
-            "Id" => sortDirection == "asc" ? query.OrderBy(t => t.Id) : query.OrderByDescending(t => t.Id),
-            "Subject" => sortDirection == "asc" ? query.OrderBy(t => t.Subject) : query.OrderByDescending(t => t.Subject),
-            "Status" => sortDirection == "asc" ? query.OrderBy(t => t.Status) : query.OrderByDescending(t => t.Status),
-            "Priority" => sortDirection == "asc" ? query.OrderBy(t => t.Priority) : query.OrderByDescending(t => t.Priority),
-            "Requester" => sortDirection == "asc" ? query.OrderBy(t => t.RequesterName) : query.OrderByDescending(t => t.RequesterName),
-            "AssignedTo" => sortDirection == "asc" ? query.OrderBy(t => t.AssignedToUser != null ? t.AssignedToUser.Email : "") : query.OrderByDescending(t => t.AssignedToUser != null ? t.AssignedToUser.Email : ""),
-            "CreatedDate" => sortDirection == "asc" ? query.OrderBy(t => t.CreatedDate) : query.OrderByDescending(t => t.CreatedDate),
-            _ => query.OrderByDescending(t => t.CreatedDate)
+            "Id" => sortDirection == "asc" ? query.OrderBy(r => r.Id) : query.OrderByDescending(r => r.Id),
+            "Type" => sortDirection == "asc" ? query.OrderBy(r => r.Type) : query.OrderByDescending(r => r.Type),
+            "Subject" => sortDirection == "asc" ? query.OrderBy(r => r.Subject) : query.OrderByDescending(r => r.Subject),
+            "Status" => sortDirection == "asc" ? query.OrderBy(r => r.Status) : query.OrderByDescending(r => r.Status),
+            "Priority" => sortDirection == "asc" ? query.OrderBy(r => r.Priority) : query.OrderByDescending(r => r.Priority),
+            "Requester" => sortDirection == "asc" ? query.OrderBy(r => r.RequesterName) : query.OrderByDescending(r => r.RequesterName),
+            "CreatedDate" => sortDirection == "asc" ? query.OrderBy(r => r.CreatedDate) : query.OrderByDescending(r => r.CreatedDate),
+            _ => query.OrderByDescending(r => r.CreatedDate)
         };
 
-        filteredTickets = query.ToList();
+        filteredRequests = query.ToList();
     }
 
-    private List<Ticket> GetPaginatedTickets()
+    // Legacy method for compatibility
+    private void FilterAndSortTickets()
     {
-        return filteredTickets
+        FilterAndSortRequests();
+    }
+
+    // Pagination
+    private List<UnifiedRequestModel> GetPaginatedRequests()
+    {
+        return filteredRequests
             .Skip((currentPage - 1) * pageSize)
             .Take(pageSize)
             .ToList();
@@ -1312,7 +1270,7 @@ private async Task HandleEditSubmit()
 
     private int GetTotalPages()
     {
-        return (int)Math.Ceiling((double)filteredTickets.Count / pageSize);
+        return (int)Math.Ceiling((double)filteredRequests.Count / pageSize);
     }
 
     private void PreviousPage()
@@ -1331,21 +1289,30 @@ private async Task HandleEditSubmit()
         }
     }
 
-    private string GetSortIcon(string column)
+    // Statistics
+    private int GetTotalRequests() => allRequests.Count;
+    private int GetRequestsByStatus(string status) => allRequests.Count(r => r.Status == status);
+    private int GetRequestsByType(string type) => allRequests.Count(r => r.Type == type);
+
+    // UI Interactions
+    private void ToggleRequestDetails(int requestId)
     {
-        if (sortColumn != column) return "";
-        return sortDirection == "asc" ? "fa-sort-up" : "fa-sort-down";
+        if (expandedTickets.Contains(requestId))
+        {
+            expandedTickets.Remove(requestId);
+        }
+        else
+        {
+            expandedTickets.Add(requestId);
+        }
+        StateHasChanged();
     }
 
-    private int GetTotalTickets() => tickets.Count;
-    private int GetTicketsByStatus(string status) => tickets.Count(t => t.Status == status);
-
-// You can also modify the existing ToggleActionsMenu method if needed
-private void ToggleActionsMenu(int ticketId)
-{
-    activeDropdown = activeDropdown == ticketId ? 0 : ticketId;
-    StateHasChanged();
-}
+    private void ToggleActionsMenu(int requestId)
+    {
+        activeDropdown = activeDropdown == requestId ? 0 : requestId;
+        StateHasChanged();
+    }
 
     private void CloseActionsMenu()
     {
@@ -1353,104 +1320,111 @@ private void ToggleActionsMenu(int ticketId)
         StateHasChanged();
     }
 
-    private void ViewTicket(int ticketId)
+    // Actions
+    private void ViewRequest(UnifiedRequestModel request)
     {
         CloseActionsMenu();
-        Navigation.NavigateTo($"/tickets/details/{ticketId}");
+        if (request.Type == "Ticket")
+        {
+            Navigation.NavigateTo($"/tickets/details/{request.Id}");
+        }
+        else
+        {
+            Navigation.NavigateTo($"/documents/details/{request.Id}");
+        }
     }
 
-    private async Task AssignTicket(int ticketId)
+    private async Task DeleteRequest(UnifiedRequestModel request)
     {
         CloseActionsMenu();
-        await JSRuntime.InvokeVoidAsync("alert", $"Assign ticket #{ticketId} functionality to be implemented");
+        bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+            $"Are you sure you want to delete this {request.Type.ToLower()} #{request.Id}?");
+        
+        if (confirmed)
+        {
+            try
+            {
+                bool deleted = false;
+                if (request.Type == "Ticket")
+                {
+                    deleted = await TicketService.DeleteTicketAsync(request.Id);
+                }
+                else
+                {
+                    deleted = await DocumentRequestService.DeleteDocumentRequestAsync(request.Id);
+                }
+                
+                if (deleted)
+                {
+                    await LoadAllRequestsAsync();
+                    StateHasChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Error deleting request: {ex.Message}");
+            }
+        }
     }
 
-    private async Task DeleteTicket(int ticketId)
-{
-    CloseActionsMenu();
-    bool confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete ticket #{ticketId}?");
-    if (confirmed)
+    private async Task CloseTicket(int ticketId)
     {
+        CloseActionsMenu();
         try
         {
-            bool deleted = await TicketService.DeleteTicketAsync(ticketId);
-            if (deleted)
-            {
-                // Reload tickets from database
-                await LoadTicketsAsync();
-                StateHasChanged();
-            }
+            await TicketService.ChangeTicketStatusAsync(ticketId, "Closed");
+            await LoadAllRequestsAsync();
+            StateHasChanged();
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error deleting ticket: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", $"Error closing ticket: {ex.Message}");
         }
     }
-}
 
-    private async Task CloseTicket(int ticketId)
-{
-    CloseActionsMenu();
-    try
+    private async Task ReopenTicket(int ticketId)
     {
-        await TicketService.ChangeTicketStatusAsync(ticketId, "Closed");
-        await LoadTicketsAsync(); // Reload to get updated data
-        StateHasChanged();
+        CloseActionsMenu();
+        try
+        {
+            await TicketService.ChangeTicketStatusAsync(ticketId, "Open");
+            await LoadAllRequestsAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error reopening ticket: {ex.Message}");
+        }
     }
-    catch (Exception ex)
+
+    // Utility Methods
+    private string GetSortIcon(string column)
     {
-        await JSRuntime.InvokeVoidAsync("alert", $"Error closing ticket: {ex.Message}");
+        if (sortColumn != column) return "";
+        return sortDirection == "asc" ? "fa-sort-up" : "fa-sort-down";
     }
-}
 
-private async Task ReopenTicket(int ticketId)
-{
-    CloseActionsMenu();
-    try
+    public class UnifiedRequestModel
     {
-        await TicketService.ChangeTicketStatusAsync(ticketId, "Open");
-        await LoadTicketsAsync(); // Reload to get updated data
-        StateHasChanged();
+        public int Id { get; set; }
+        public string Type { get; set; } = "";
+        public string Subject { get; set; } = "";
+        public string RequesterName { get; set; } = "";
+        public string RequesterEmail { get; set; } = "";
+        public string Status { get; set; } = "";
+        public string Priority { get; set; } = "";
+        public string Department { get; set; } = "";
+        public string Category { get; set; } = "";
+        public DateTime CreatedDate { get; set; }
+        public string Description { get; set; } = "";
+        public string? Company { get; set; }
+        public string? Location { get; set; }
+        public DateTime? DateNeeded { get; set; }
+        public TimeOnly? TimeNeeded { get; set; }
+        public string? AppReferenceNo { get; set; }
+        public DateTime? RequestDate { get; set; }
+        public string? DocumentName { get; set; }
+        public string? DocumentType { get; set; }
+        public int? NumberOfCopies { get; set; }
     }
-    catch (Exception ex)
-    {
-        await JSRuntime.InvokeVoidAsync("alert", $"Error reopening ticket: {ex.Message}");
-    }
-}
-
-public class EditTicketModel
-{
-    public int Id { get; set; }
-    
-    [Required(ErrorMessage = "Requester name is required")]
-    public string RequesterName { get; set; } = "";
-
-    [Required(ErrorMessage = "Email address is required")]
-    [EmailAddress(ErrorMessage = "Please enter a valid email address")]
-    public string RequesterEmail { get; set; } = "";
-
-    [Required(ErrorMessage = "Department is required")]
-    public string Department { get; set; } = "";
-
-    [Required(ErrorMessage = "Category is required")]
-    public string Category { get; set; } = "";
-
-    [Required(ErrorMessage = "Subject is required")]
-    [StringLength(200, ErrorMessage = "Subject must be less than 200 characters")]
-    public string Subject { get; set; } = "";
-
-    [Required(ErrorMessage = "Priority is required")]
-    public string Priority { get; set; } = "";
-
-    [Required(ErrorMessage = "Status is required")]
-    public string Status { get; set; } = "";
-
-    [Required(ErrorMessage = "Description is required")]
-    [StringLength(2000, MinimumLength = 20, ErrorMessage = "Description must be between 20 and 2000 characters")]
-    public string Description { get; set; } = "";
-
-    [StringLength(1000, ErrorMessage = "Resolution must be less than 1000 characters")]
-    public string? Resolution { get; set; }
-}
-    
 }

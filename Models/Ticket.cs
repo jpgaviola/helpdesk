@@ -11,15 +11,6 @@ namespace HelpdeskBlazor.Models
         public int Id { get; set; }
 
         [Required]
-        [StringLength(100)]
-        public string RequesterName { get; set; } = string.Empty;
-
-        [Required]
-        [StringLength(255)]
-        [EmailAddress]
-        public string RequesterEmail { get; set; } = string.Empty;
-
-        [Required]
         [StringLength(50)]
         public string Department { get; set; } = string.Empty;
 
@@ -41,7 +32,7 @@ namespace HelpdeskBlazor.Models
 
         [Required]
         [StringLength(20)]
-        public string Status { get; set; } = "Open";
+        public string Status { get; set; } = "Pending";
 
         public int? AssignedToUserId { get; set; }
 
@@ -75,6 +66,9 @@ namespace HelpdeskBlazor.Models
         [StringLength(100)]
         public string? Company { get; set; }
 
+        [StringLength(100)]
+        public string? Location { get; set; }
+
         public DateTime? DateNeeded { get; set; }
 
         public TimeOnly? TimeNeeded { get; set; }
@@ -92,5 +86,6 @@ namespace HelpdeskBlazor.Models
         // Related entities
         public virtual ICollection<TicketAttachment> Attachments { get; set; } = new List<TicketAttachment>();
         public virtual ICollection<TicketComment> Comments { get; set; } = new List<TicketComment>();
+        public virtual ICollection<TicketSignatory> Signatories { get; set; } = new List<TicketSignatory>();
     }
 }

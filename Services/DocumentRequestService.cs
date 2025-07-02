@@ -16,9 +16,7 @@ namespace HelpdeskBlazor.Services
         public async Task<List<DocumentRequest>> GetAllDocumentRequestsAsync()
         {
             return await _context.DocumentRequests
-                .Include(dr => dr.CreatedByUser)
                 .Include(dr => dr.DocumentItems)
-                .Include(dr => dr.Attachments)
                 .Where(dr => !dr.IsDeleted)
                 .OrderByDescending(dr => dr.CreatedDate)
                 .ToListAsync();

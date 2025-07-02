@@ -16,6 +16,7 @@ namespace HelpdeskBlazor.Data
             public DbSet<DocumentRequest> DocumentRequests { get; set; }
             public DbSet<DocumentItem> DocumentItems { get; set; }
             public DbSet<DocumentRequestAttachment> DocumentRequestAttachments { get; set; }
+            public DbSet<TicketSignatory> TicketSignatories { get; set; }
 
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
