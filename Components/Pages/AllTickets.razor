@@ -267,10 +267,13 @@
     }
 
     .status-pending { background: #fff3cd; color: #856404; }
-    .status-AcknowledgeRequest { background: #d4edda; color: #155724; }
-    .status-EndorseRequest { background: #d1ecf1; color: #0c5460; }
-    .status-CancelRequest { background: #f8d7da; color: #721c24; }
-    .status-RejectRequest { background: #f8d7da; color: #686465; }
+    .status-acknowledge { background: #d4edda; color: #155724; }
+    .status-endorse { background: #d1ecf1; color: #0c5460; }
+    .status-cancel { background: #f8d7da; color: #721c24; }
+    .status-reject { background: #f8d7da; color: #686465; }
+    .status-closed { background: #e2e3e5; color: #383d41; }
+    .status-executed { background: #d4edda; color: #155724; }
+    .status-open { background: #d1ecf1; color: #0c5460; }
 
     .actions-dropdown {
         position: relative;
@@ -788,6 +791,119 @@
     color: #0A1A28;
     font-weight: 600;
 }
+
+.status-submenu {
+    position: absolute;
+    left: 100%;
+    top: 0;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 160px;
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-10px);
+    transition: all 0.3s ease;
+}
+
+.status-submenu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+.actions-menu-item.has-submenu {
+    position: relative;
+}
+
+.actions-menu-item.has-submenu::after {
+    content: "\f054";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    margin-left: auto;
+    font-size: 10px;
+    opacity: 0.6;
+}
+
+.status-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 15px;
+    color: #666;
+    cursor: pointer;
+    font-size: 13px;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: all 0.3s ease;
+}
+
+.status-option:hover {
+    background: #f8f9fa;
+    color: #333;
+}
+
+.status-change-option i {
+    font-size: 20px;
+    width: 24px;
+    text-align: center;
+    border: none !important;    
+    outline: none !important;
+    box-shadow: none !important;
+    background: none !important;
+    padding: 0 !important;
+}
+
+.status-change-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px;
+    border: 2px solid #E7EAEE;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.status-change-option:hover {
+    border-color: #ff6b35;
+    background: #fff8f5;
+}
+
+.status-change-option.selected {
+    border-color: #ff6b35;
+    background: linear-gradient(135deg, #fff8f5 0%, #fff0e6 100%);
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.15);
+}
+
+.status-change-option i {
+    font-size: 20px;
+    width: 24px;
+    text-align: center;
+}
+
+.status-change-option div {
+    flex: 1;
+}
+
+.status-change-option strong {
+    display: block;
+    font-size: 14px;
+    color: #0A1A28;
+    margin-bottom: 2px;
+}
+
+.status-change-option small {
+    font-size: 12px;
+    color: #666;
+}
+
 </style>
 
 <div class="tickets-container">
@@ -815,11 +931,11 @@
         
         <select class="filter-dropdown" @bind="statusFilter" @bind:after="OnFilterChanged">
             <option value="">All Status</option>
-            <option value="Pending">Pending</option>
-            <option value="Acknowledge Request">Acknowledge Request</option>
-            <option value="Endorse Request">Endorse Request</option>
-            <option value="Cancel Request"> Cancel Request</option>
-            <option value="Reject Request">  Reject Request</option>
+            <option value="Pending">Pending </option>
+            <option value="Acknowledge">Acknowledge</option>
+            <option value="Endorse">Endorse</option>
+            <option value="Cancel">Cancel</option>
+            <option value="Reject">Reject</option>
         </select>
     </div>
 </div>
@@ -906,6 +1022,13 @@
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
                             <div class="actions-menu @(activeDropdown == request.Id ? "show" : "")">
+                                <!-- Change Status menu item (now opens modal) -->
+                                <button class="actions-menu-item" @onclick="() => OpenStatusModal(request)" @onclick:stopPropagation="true">
+                                    <i class="fas fa-exchange-alt"></i>
+                                    Change Status
+                                </button>
+                                
+                                <!-- Delete action -->
                                 <button class="actions-menu-item danger" @onclick="() => DeleteRequest(request)" @onclick:stopPropagation="true">
                                     <i class="fas fa-trash"></i>
                                     Delete
@@ -1053,16 +1176,102 @@ else
 </div>
 
 <div class="dropdown-overlay @(activeDropdown != 0 ? "show" : "")" @onclick="CloseActionsMenu" @onclick:stopPropagation="true"></div>
+<div class="modal-overlay @(showStatusModal ? "show" : "")" @onclick="CloseStatusModal">
+    <div class="modal-content" @onclick:stopPropagation="true">
+        <div class="modal-header">
+            <h3 class="modal-title">Change Request Status</h3>
+            <button class="modal-close" @onclick="CloseStatusModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            @if (selectedRequest != null)
+            {
+                <div class="form-group">
+                    <label class="form-label">Request Details</label>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <strong>@selectedRequest.Type #@selectedRequest.Id</strong><br>
+                        <span style="color: #666;">@selectedRequest.Subject</span><br>
+                        <small style="color: #999;">Current Status: <span class="status-badge status-@selectedRequest.Status.ToLower()">@selectedRequest.Status</span></small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label required">New Status</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <button class="status-change-option @(selectedStatus == "Acknowledge" ? "selected" : "")" 
+                                @onclick="@(() => SelectStatus("Acknowledge"))">
+                            <i class="fas fa-check-circle status-acknowledge"></i>
+                            <div>
+                                <strong>Acknowledge</strong>
+                                <small>Confirm receipt and review</small>
+                            </div>
+                        </button>
+                        
+                        <button class="status-change-option @(selectedStatus == "Endorse" ? "selected" : "")" 
+                                @onclick="@(() => SelectStatus("Endorse"))">
+                            <i class="fas fa-thumbs-up status-endorse"></i>
+                            <div>
+                                <strong>Endorse</strong>
+                                <small>Approve and forward</small>
+                            </div>
+                        </button>
+                        
+                        <button class="status-change-option @(selectedStatus == "Closed" ? "selected" : "")" 
+                                @onclick="@(() => SelectStatus("Closed"))">
+                            <i class="fas fa-times-circle status-closed"></i>
+                            <div>
+                                <strong>Closed</strong>
+                                <small>Mark as completed</small>
+                            </div>
+                        </button>
+                        
+                        <button class="status-change-option @(selectedStatus == "Executed" ? "selected" : "")" 
+                                @onclick="@(() => SelectStatus("Executed"))">
+                            <i class="fas fa-check-double status-executed"></i>
+                            <div>
+                                <strong>Executed</strong>
+                                <small>Successfully processed</small>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-secondary" @onclick="CloseStatusModal" disabled="@isStatusChanging">
+                Cancel
+            </button>
+            <button class="btn btn-primary" @onclick="ConfirmStatusChange" disabled="@(string.IsNullOrEmpty(selectedStatus) || isStatusChanging)">
+                @if (isStatusChanging)
+                {
+                    <div class="loading-spinner"></div>
+                }
+                Change Status
+            </button>
+        </div>
+    </div>
+</div>
 
 @code {
     // Properties and Fields
+    private bool showStatusModal = false;
+    private UnifiedRequestModel? selectedRequest = null;
+    private string selectedStatus = "";
+    private string statusChangeComment = "";
+    private bool isStatusChanging = false;
+
+    private int activeStatusSubmenu = 0;
     private Dictionary<int, List<TicketSignatory>> ticketSignatories = new Dictionary<int, List<TicketSignatory>>();
     private List<UnifiedRequestModel> allRequests = new List<UnifiedRequestModel>();
     private List<UnifiedRequestModel> filteredRequests = new List<UnifiedRequestModel>();
+    
     private List<TicketSignatory> GetSignatoriesForTicket(int ticketId)
-{
-    return ticketSignatories.ContainsKey(ticketId) ? ticketSignatories[ticketId] : new List<TicketSignatory>();
-}
+    {
+        return ticketSignatories.ContainsKey(ticketId) ? ticketSignatories[ticketId] : new List<TicketSignatory>();
+    }
     
     private string searchTerm = "";
     private string statusFilter = "";
@@ -1078,6 +1287,77 @@ else
     private bool isEditSubmitting = false;
     private HashSet<int> expandedTickets = new HashSet<int>();
 
+        private void OpenStatusModal(UnifiedRequestModel request)
+    {
+        CloseActionsMenu();
+        selectedRequest = request;
+        selectedStatus = "";
+        statusChangeComment = "";
+        showStatusModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseStatusModal()
+    {
+        showStatusModal = false;
+        selectedRequest = null;
+        selectedStatus = "";
+        statusChangeComment = "";
+        isStatusChanging = false;
+        StateHasChanged();
+    }
+
+    private void SelectStatus(string status)
+    {
+        selectedStatus = status;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmStatusChange()
+    {
+        if (selectedRequest == null || string.IsNullOrEmpty(selectedStatus))
+            return;
+
+        isStatusChanging = true;
+        StateHasChanged();
+
+        try
+        {
+            bool updated = false;
+            if (selectedRequest.Type == "Ticket")
+            {
+                var updatedTicket = await TicketService.ChangeTicketStatusAsync(selectedRequest.Id, selectedStatus);
+                updated = updatedTicket != null;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Status change for document requests is not yet implemented.");
+                return;
+            }
+
+            if (updated)
+            {
+                await LoadAllRequestsAsync();
+                CloseStatusModal();
+                await JSRuntime.InvokeVoidAsync("alert", $"Status changed to '{selectedStatus}' successfully!");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Failed to update status.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error changing status: {ex.Message}");
+        }
+        finally
+        {
+            isStatusChanging = false;
+            StateHasChanged();
+        }
+    }
+
+
     // Initialization
     protected override async Task OnInitializedAsync()
     {
@@ -1085,111 +1365,115 @@ else
     }
 
     // Data Loading
-   private async Task LoadAllRequestsAsync()
-{
-    try
+    private async Task LoadAllRequestsAsync()
     {
-        var unifiedList = new List<UnifiedRequestModel>();
-        
-        Console.WriteLine("=== Starting to load data ===");
-        
-        // Load tickets
-        Console.WriteLine("=== Loading tickets ===");
-        var tickets = await TicketService.GetAllTicketsAsync();
-        Console.WriteLine($"Received {tickets.Count} tickets from service");
-        
-        foreach (var ticket in tickets)
+        try
         {
-            Console.WriteLine($"Processing ticket - ID: {ticket.Id}, Subject: '{ticket.Subject}', Status: '{ticket.Status}'");
+            var unifiedList = new List<UnifiedRequestModel>();
             
-            try
+            Console.WriteLine("=== Starting to load data ===");
+            
+            // Load tickets
+            Console.WriteLine("=== Loading tickets ===");
+            var tickets = await TicketService.GetAllTicketsAsync();
+            Console.WriteLine($"Received {tickets.Count} tickets from service");
+            
+            foreach (var ticket in tickets)
             {
-                var signatories = await TicketService.GetTicketSignatoriesAsync(ticket.Id);
-                ticketSignatories[ticket.Id] = signatories;
+                Console.WriteLine($"Processing ticket - ID: {ticket.Id}, Subject: '{ticket.Subject}', Status: '{ticket.Status}'");
                 
-                var ticketRequest = new UnifiedRequestModel
+                try
                 {
-                    Id = ticket.Id,
-                    Type = "Ticket",
-                    Subject = ticket.Subject ?? $"Legal Ticket #{ticket.Id}",
-                    RequesterName = "Legal Department",
-                    RequesterEmail = "legal@company.com",
-                    Status = ticket.Status ?? "Pending",
-                    Department = ticket.Department ?? "Legal",
-                    Category = ticket.Category ?? "Legal Request",
-                    CreatedDate = ticket.CreatedDate,
-                    Description = ticket.Description ?? "No description",            
-                    Company = ticket.Company ?? "N/A",
-                    Location = ticket.Location ?? "N/A",
-                    DateNeeded = ticket.DateNeeded,
-                    TimeNeeded = ticket.TimeNeeded,
-                    AppReferenceNo = ticket.AppReferenceNo,
-                    RequestDate = ticket.RequestDate,
-                    // Tickets don't have document properties
-                    DocumentName = null,
-                    DocumentType = null,
-                    NumberOfCopies = null
-                };
-                
-                unifiedList.Add(ticketRequest);
-                Console.WriteLine($"Successfully added ticket {ticket.Id} to unified list");
+                    var signatories = await TicketService.GetTicketSignatoriesAsync(ticket.Id);
+                    ticketSignatories[ticket.Id] = signatories;
+                    
+                    var ticketRequest = new UnifiedRequestModel
+                    {
+                        Id = ticket.Id,
+                        Type = "Ticket",
+                        Subject = ticket.Subject ?? $"Legal Ticket #{ticket.Id}",
+                        RequesterName = "Legal Department",
+                        RequesterEmail = "legal@company.com",
+                        Status = ticket.Status ?? "Pending",
+                        Department = ticket.Department ?? "Legal",
+                        Category = ticket.Category ?? "Legal Request",
+                        CreatedDate = ticket.CreatedDate,
+                        Description = ticket.Description ?? "No description",            
+                        Company = ticket.Company ?? "N/A",
+                        Location = ticket.Location ?? "N/A",
+                        DateNeeded = ticket.DateNeeded,
+                        TimeNeeded = ticket.TimeNeeded,
+                        AppReferenceNo = ticket.AppReferenceNo,
+                        RequestDate = ticket.RequestDate,
+                        // Tickets don't have document properties
+                        DocumentName = null,
+                        DocumentType = null,
+                        NumberOfCopies = null
+                    };
+                    
+                    unifiedList.Add(ticketRequest);
+                    Console.WriteLine($"Successfully added ticket {ticket.Id} to unified list");
+                }
+                catch (Exception ticketEx)
+                {
+                    Console.WriteLine($"Error processing ticket {ticket.Id}: {ticketEx.Message}");
+                }
             }
-            catch (Exception ticketEx)
-            {
-                Console.WriteLine($"Error processing ticket {ticket.Id}: {ticketEx.Message}");
-            }
-        }
-        
-        Console.WriteLine($"=== Tickets processed: {unifiedList.Count(r => r.Type == "Ticket")} ===");
-        Console.WriteLine("=== Loading document requests ===");
-        var documentRequests = await DocumentRequestService.GetAllDocumentRequestsAsync();
-        Console.WriteLine($"Found {documentRequests.Count} document requests");
-        
-        foreach (var docReq in documentRequests)
-        {
-            var subject = $"Document Request #{docReq.Id} - {docReq.Company}";
-            var firstDocItem = docReq.DocumentItems?.FirstOrDefault();
             
-            unifiedList.Add(new UnifiedRequestModel
+            var ticketCount = unifiedList.Count(r => r.Type == "Ticket");
+            Console.WriteLine($"=== Tickets processed: {ticketCount} ===");
+            
+            Console.WriteLine("=== Loading document requests ===");
+            var documentRequests = await DocumentRequestService.GetAllDocumentRequestsAsync();
+            Console.WriteLine($"Found {documentRequests.Count} document requests");
+            
+            foreach (var docReq in documentRequests)
             {
-                Id = docReq.Id,
-                Type = "Document",
-                Subject = subject,
-                RequesterName = "System User",
-                RequesterEmail = "system@company.com",
-                Status = docReq.Status ?? "Pending",
-                Department = "Legal",
-                Category = "Document Request",
-                CreatedDate = docReq.CreatedDate,
-                Description = docReq.Particulars ?? "No particulars provided",
-                Company = docReq.Company ?? "Unknown Company",
-                DateNeeded = docReq.DateNeeded,
-                TimeNeeded = docReq.TimeNeeded,
-                DocumentName = firstDocItem?.DocumentName ?? "N/A",
-                DocumentType = firstDocItem?.Type ?? "N/A",
-                NumberOfCopies = firstDocItem?.NumberOfCopies ?? 0
-            });
+                var subject = $"Document Request #{docReq.Id} - {docReq.Company}";
+                var firstDocItem = docReq.DocumentItems?.FirstOrDefault();
+                
+                unifiedList.Add(new UnifiedRequestModel
+                {
+                    Id = docReq.Id,
+                    Type = "Document",
+                    Subject = subject,
+                    RequesterName = "System User",
+                    RequesterEmail = "system@company.com",
+                    Status = docReq.Status ?? "Pending",
+                    Department = "Legal",
+                    Category = "Document Request",
+                    CreatedDate = docReq.CreatedDate,
+                    Description = docReq.Particulars ?? "No particulars provided",
+                    Company = docReq.Company ?? "Unknown Company",
+                    DateNeeded = docReq.DateNeeded,
+                    TimeNeeded = docReq.TimeNeeded,
+                    DocumentName = firstDocItem?.DocumentName ?? "N/A",
+                    DocumentType = firstDocItem?.Type ?? "N/A",
+                    NumberOfCopies = firstDocItem?.NumberOfCopies ?? 0
+                });
+            }
+            
+            Console.WriteLine($"=== Total unified list count: {unifiedList.Count} ===");
+            var finalTicketCount = unifiedList.Count(r => r.Type == "Ticket");
+            var finalDocumentCount = unifiedList.Count(r => r.Type == "Document");
+            Console.WriteLine($"=== Tickets in list: {finalTicketCount} ===");
+            Console.WriteLine($"=== Documents in list: {finalDocumentCount} ===");
+            
+            allRequests = unifiedList;
+            filteredRequests = allRequests.ToList();
+            
+            Console.WriteLine($"=== Final filteredRequests count: {filteredRequests.Count} ===");
+            
+            await InvokeAsync(StateHasChanged);
         }
-        
-        Console.WriteLine($"=== Total unified list count: {unifiedList.Count} ===");
-        Console.WriteLine($"=== Tickets in list: {unifiedList.Count(r => r.Type == "Ticket")} ===");
-        Console.WriteLine($"=== Documents in list: {unifiedList.Count(r => r.Type == "Document")} ===");
-        
-        allRequests = unifiedList;
-        filteredRequests = allRequests.ToList();
-        
-        Console.WriteLine($"=== Final filteredRequests count: {filteredRequests.Count} ===");
-        
-        await InvokeAsync(StateHasChanged);
+        catch (Exception ex)
+        {
+            Console.WriteLine($"MAJOR ERROR in LoadAllRequestsAsync: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            allRequests = new List<UnifiedRequestModel>();
+            filteredRequests = new List<UnifiedRequestModel>();
+        }
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"MAJOR ERROR in LoadAllRequestsAsync: {ex.Message}");
-        Console.WriteLine($"Stack trace: {ex.StackTrace}");
-        allRequests = new List<UnifiedRequestModel>();
-        filteredRequests = new List<UnifiedRequestModel>();
-    }
-}
 
     // Filtering and Sorting
     private void OnSearchChanged(ChangeEventArgs e)
@@ -1314,11 +1598,60 @@ else
         StateHasChanged();
     }
 
+    private void ShowStatusSubmenu(int requestId)
+    {
+        activeStatusSubmenu = requestId;
+        StateHasChanged();
+    }
+
+    private void HideStatusSubmenu(int requestId)
+    {
+        activeStatusSubmenu = 0;
+        StateHasChanged();
+    }
+
+    private async Task ChangeRequestStatus(UnifiedRequestModel request, string newStatus)
+    {
+        CloseActionsMenu();
+        
+        try
+        {
+            bool updated = false;
+            if (request.Type == "Ticket")
+            {
+                var updatedTicket = await TicketService.ChangeTicketStatusAsync(request.Id, newStatus);
+                updated = updatedTicket != null;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Status change for document requests is not yet implemented.");
+                return;
+            }
+            
+            if (updated)
+            {
+                await LoadAllRequestsAsync();
+                StateHasChanged();
+                await JSRuntime.InvokeVoidAsync("alert", $"Status changed to '{newStatus}' successfully!");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Failed to update status.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error changing status: {ex.Message}");
+        }
+    }
+
     private void CloseActionsMenu()
     {
         activeDropdown = 0;
+        activeStatusSubmenu = 0;
         StateHasChanged();
     }
+
 
     // Actions
     private void ViewRequest(UnifiedRequestModel request)
@@ -1372,9 +1705,12 @@ else
         CloseActionsMenu();
         try
         {
-            await TicketService.ChangeTicketStatusAsync(ticketId, "Closed");
-            await LoadAllRequestsAsync();
-            StateHasChanged();
+            var updatedTicket = await TicketService.ChangeTicketStatusAsync(ticketId, "Closed");
+            if (updatedTicket != null)
+            {
+                await LoadAllRequestsAsync();
+                StateHasChanged();
+            }
         }
         catch (Exception ex)
         {
@@ -1387,9 +1723,12 @@ else
         CloseActionsMenu();
         try
         {
-            await TicketService.ChangeTicketStatusAsync(ticketId, "Open");
-            await LoadAllRequestsAsync();
-            StateHasChanged();
+            var updatedTicket = await TicketService.ChangeTicketStatusAsync(ticketId, "Open");
+            if (updatedTicket != null)
+            {
+                await LoadAllRequestsAsync();
+                StateHasChanged();
+            }
         }
         catch (Exception ex)
         {
