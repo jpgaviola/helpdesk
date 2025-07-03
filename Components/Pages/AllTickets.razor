@@ -1373,14 +1373,6 @@ else
         <div class="modal-body">
             @if (selectedRequestForAttachments != null)
             {
-                <div class="form-group">
-                    <label class="form-label">Request Details</label>
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-                        <strong>@selectedRequestForAttachments.Subject</strong><br>
-                        <span style="color: #666;">@selectedRequestForAttachments.RequesterName</span><br>
-                        <small style="color: #999;">Created: @selectedRequestForAttachments.CreatedDate.ToString("MMM dd, yyyy")</small>
-                    </div>
-                </div>
                 
                 @if (isLoadingAttachments)
                 {
