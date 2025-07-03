@@ -230,7 +230,7 @@
     .stat-card.total .stat-number { color: #007bff; }
     .stat-card.active .stat-number { color: #28a745; }
     .stat-card.inactive .stat-number { color: #ffc107; }
-    .stat-card.admins .stat-number { color: #ff6b35; }
+    .stat-card.legalstaff .stat-number { color: #a72828; }
 
     .users-table-container {
     background: white;
@@ -1143,17 +1143,17 @@
             <div class="stat-number">@GetTotalUsers()</div>
             <div class="stat-label">Total Users</div>
         </div>
-        <div class="stat-card active">
-            <div class="stat-number">@GetUsersByStatus("Active")</div>
-            <div class="stat-label">Active Users</div>
-        </div>
         <div class="stat-card inactive">
             <div class="stat-number">@GetUsersByStatus("Inactive")</div>
             <div class="stat-label">Inactive Users</div>
         </div>
-        <div class="stat-card admins">
-            <div class="stat-number">@GetUsersByRole("Admin")</div>
-            <div class="stat-label">Administrators</div>
+        <div class="stat-card active">
+            <div class="stat-number">@GetUsersByStatus("Active")</div>
+            <div class="stat-label">Active Users</div>
+        </div>
+        <div class="stat-card legalstaff">
+            <div class="stat-number">@GetUsersByRole("legalstaff")</div>
+            <div class="stat-label">Legal Staff</div>
         </div>
     </div>
 
@@ -1162,10 +1162,6 @@
         <div class="table-header">
             <h3 class="table-title">Users List</h3>
             <div class="table-actions">
-                <button class="table-action-btn" @onclick="ExportUsers">
-                    <i class="fas fa-download"></i>
-                    Export
-                </button>
                 <button class="table-action-btn" @onclick="RefreshUsers">
                     <i class="fas fa-sync-alt"></i>
                     Refresh
@@ -1183,7 +1179,6 @@
                         <th class="center">Status</th>
                         <th class="center">Department</th>
                         <th class="center">Last Login</th>
-                        <th class="center">Created Date</th>
                         <th class="center">Actions</th>
                     </tr>
                 </thead>
@@ -1208,7 +1203,6 @@
                             </td>
                             <td class="center">@user.Department</td>
                             <td class="center">@(user.LastLogin?.ToString("MMM dd, yyyy") ?? "Never")</td>
-                            <td class="center">@user.CreatedDate.ToString("MMM dd, yyyy")</td>
                             <td class="center">
                                 <div class="actions-dropdown">
                                     <button class="actions-btn" @onclick="() => ToggleActionsMenu(user.Id)" @onclick:stopPropagation="true">
@@ -1326,11 +1320,6 @@
                 <div class="user-detail-section">
                     <div class="user-detail-label">Last Login</div>
                     <div class="user-detail-value">@(selectedUser.LastLogin?.ToString("MMMM dd, yyyy 'at' hh:mm tt") ?? "Never logged in")</div>
-                </div>
-
-                <div class="user-detail-section">
-                    <div class="user-detail-label">Created Date</div>
-                    <div class="user-detail-value">@selectedUser.CreatedDate.ToString("MMMM dd, yyyy 'at' hh:mm tt")</div>
                 </div>
 
                 <div class="user-detail-section">
@@ -2192,11 +2181,6 @@ private async Task HandleEditSubmit()
         StateHasChanged();
     }
 }
-
-    private async Task ExportUsers()
-    {
-        await JSRuntime.InvokeVoidAsync("alert", "Export functionality to be implemented");
-    }
 
     private async Task RefreshUsers()
     {

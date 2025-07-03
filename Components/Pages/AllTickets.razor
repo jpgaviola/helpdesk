@@ -179,9 +179,9 @@
     }
 
     .stat-card.total .stat-number { color: #007bff; }
-    .stat-card.open .stat-number { color: #28a745; }
+    .stat-card.rejected .stat-number { color: #a72828; }
     .stat-card.pending .stat-number { color: #ffc107; }
-    .stat-card.closed .stat-number { color: #6c757d; }
+    .stat-card.executed .stat-number { color: #28a745; }
 
     .tickets-table-container {
         background: white;
@@ -1156,17 +1156,17 @@
         <div class="stat-number">@GetTotalRequests()</div>
         <div class="stat-label">Total Requests</div>
     </div>
-    <div class="stat-card open">
-        <div class="stat-number">@GetRequestsByStatus("Open")</div>
-        <div class="stat-label">Open Requests</div>
-    </div>
     <div class="stat-card pending">
         <div class="stat-number">@GetRequestsByStatus("Pending")</div>
         <div class="stat-label">Pending Requests</div>
     </div>
-    <div class="stat-card closed">
-        <div class="stat-number">@(GetRequestsByStatus("Closed") + GetRequestsByStatus("Resolved"))</div>
-        <div class="stat-label">Completed Requests</div>
+    <div class="stat-card executed">
+        <div class="stat-number">@(GetRequestsByStatus("Executed"))</div>
+        <div class="stat-label">Executed Requests</div>
+    </div>
+    <div class="stat-card rejected">
+        <div class="stat-number">@GetRequestsByStatus("Rejected")</div>
+        <div class="stat-label">Rejected Requests</div>
     </div>
 </div>
 
