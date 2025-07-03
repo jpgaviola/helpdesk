@@ -77,8 +77,6 @@ namespace HelpdeskBlazor.Services
                 }
             }
 
-            Console.WriteLine($"Final file path: {actualFilePath}");
-
             if (!File.Exists(actualFilePath))
             {
                 var commonUploadDirs = new[] {
@@ -97,7 +95,7 @@ namespace HelpdeskBlazor.Services
 
                         foreach (var file in files.Take(5))
                         {
-                            Console.WriteLine($"    - {file}");
+
                         }
                     }
                 }
@@ -106,7 +104,6 @@ namespace HelpdeskBlazor.Services
             }
 
             var fileBytes = await File.ReadAllBytesAsync(actualFilePath);
-            Console.WriteLine($"Successfully read {fileBytes.Length} bytes from file");
 
             return fileBytes;
         }

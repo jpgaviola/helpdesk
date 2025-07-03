@@ -270,11 +270,9 @@
     .status-pending { background: #fff3cd; color: #856404; }
     .status-acknowledge { background: #d4edda; color: #155724; }
     .status-endorse { background: #d1ecf1; color: #0c5460; }
-    .status-cancel { background: #f8d7da; color: #721c24; }
-    .status-reject { background: #f8d7da; color: #686465; }
+    .status-rejected { background: #f8d7da; color: #721c24; }
     .status-closed { background: #e2e3e5; color: #383d41; }
     .status-executed { background: #d4edda; color: #155724; }
-    .status-open { background: #d1ecf1; color: #0c5460; }
 
     .actions-dropdown {
         position: relative;
@@ -1113,6 +1111,44 @@
     color: #666;
 }
 
+.assignment-info {
+    background: #e8f5e8;
+    border: 1px solid #c3e6c3;
+    border-radius: 6px;
+    padding: 12px 15px;
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.assignment-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #155724;
+}
+
+.assignment-header i {
+    color: #28a745;
+}
+
+.assignment-details {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.assignment-label {
+    font-weight: 600;
+    color: #155724;
+}
+
+.assignment-value {
+    color: #155724;
+}
+
 </style>
 
 <div class="tickets-container">
@@ -1143,7 +1179,7 @@
             <option value="Pending">Pending </option>
             <option value="Acknowledge">Acknowledge</option>
             <option value="Endorse">Endorse</option>
-            <option value="Cancel">Cancel</option>
+            <option value="Closed">Closed</option>
             <option value="Reject">Reject</option>
         </select>
     </div>
@@ -1325,12 +1361,41 @@
                                 </div>
                             }
                             
-                            <!-- Description moved here to be beside APP Reference No. -->
+                            <!-- Description -->
                             <div class="detail-section">
                                 <div class="detail-label">@(request.Type == "Document" ? "Particulars/Reason" : "Description")</div>
                                 <div class="detail-value">@request.Description</div>
                             </div>
                         </div>
+
+                        <!-- Endorse To: -->
+                        @if (request.AssignedToUserId.HasValue && !string.IsNullOrEmpty(request.AssignedToUserName))
+                        {
+                            <div class="detail-section description-section">
+                                <div class="detail-label">Assignment Information</div>
+                                <div class="detail-value">
+                                    <div class="assignment-info">
+                                        <div class="assignment-header">
+                                            <i class="fas fa-user-check"></i>
+                                            <span>@(request.Status == "Endorse" ? "Endorsed To" : "Assigned To")</span>
+                                        </div>
+                                        <div class="assignment-details">
+                                            <span class="assignment-label">Name:</span>
+                                            <span class="assignment-value">@request.AssignedToUserName</span>
+                                            
+                                            <span class="assignment-label">Email:</span>
+                                            <span class="assignment-value">@request.AssignedToUserEmail</span>
+                                            
+                                            @if (request.AssignedDate.HasValue)
+                                            {
+                                                <span class="assignment-label">@(request.Status == "Endorse" ? "Endorsed On:" : "Assigned On:")</span>
+                                                <span class="assignment-value">@request.AssignedDate.Value.ToString("MMMM dd, yyyy 'at' hh:mm tt")</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
 
                         <!-- Signatories Section -->
                         @if (request.Type == "Ticket" && (request.Category == "Contract Review/Preparation" || request.Category == "Secretary's Certificate"))
@@ -1355,7 +1420,7 @@
                                     }
                                 </div>
                             </div>
-                        }
+                        }                       
                     </div>
                 </td>
             </tr>
@@ -1447,6 +1512,15 @@ else
                             <div>
                                 <strong>Executed</strong>
                                 <small>Successfully processed</small>
+                            </div>
+                        </button>
+
+                        <button class="status-change-option @(selectedStatus == "Rejected" ? "selected" : "")" 
+                                @onclick="@(() => SelectStatus("Rejected"))">
+                            <i class="fas fa-thumbs-down status-rejected"></i>
+                            <div>
+                                <strong>Rejected</strong>
+                                <small>Mark as rejected</small>
                             </div>
                         </button>
                     </div>
@@ -1851,114 +1925,124 @@ else
 
     // Data Loading
     private async Task LoadAllRequestsAsync()
+{
+    try
     {
-        try
-        {
-            var unifiedList = new List<UnifiedRequestModel>();
-            
-            Console.WriteLine("=== Starting to load data ===");
-            
-            // Load tickets
-            Console.WriteLine("=== Loading tickets ===");
-            var tickets = await TicketService.GetAllTicketsAsync();
-            Console.WriteLine($"Received {tickets.Count} tickets from service");
-            
-            foreach (var ticket in tickets)
+        var unifiedList = new List<UnifiedRequestModel>();
+        var tickets = await TicketService.GetAllTicketsAsync();
+        
+        foreach (var ticket in tickets)
+        {     
+            try
             {
-                Console.WriteLine($"Processing ticket - ID: {ticket.Id}, Subject: '{ticket.Subject}', Status: '{ticket.Status}'");
+                var signatories = await TicketService.GetTicketSignatoriesAsync(ticket.Id);
+                ticketSignatories[ticket.Id] = signatories;
                 
-                try
+                string? assignedUserName = null;
+                string? assignedUserEmail = null;
+                DateTime? assignedDate = null;
+                
+                if (ticket.AssignedToUserId.HasValue)
                 {
-                    var signatories = await TicketService.GetTicketSignatoriesAsync(ticket.Id);
-                    ticketSignatories[ticket.Id] = signatories;
-                    
-                    var ticketRequest = new UnifiedRequestModel
+                    try
                     {
-                        Id = ticket.Id,
-                        Type = "Ticket",
-                        Subject = ticket.Subject ?? $"Legal Ticket #{ticket.Id}",
-                        RequesterName = "Legal Department",
-                        RequesterEmail = "legal@company.com",
-                        Status = ticket.Status ?? "Pending",
-                        Department = ticket.Department ?? "Legal",
-                        Category = ticket.Category ?? "Legal Request",
-                        CreatedDate = ticket.CreatedDate,
-                        Description = ticket.Description ?? "No description",            
-                        Company = ticket.Company ?? "N/A",
-                        Location = ticket.Location ?? "N/A",
-                        DateNeeded = ticket.DateNeeded,
-                        TimeNeeded = ticket.TimeNeeded,
-                        AppReferenceNo = ticket.AppReferenceNo,
-                        RequestDate = ticket.RequestDate,
-                        // Tickets don't have document properties
-                        DocumentName = null,
-                        DocumentType = null,
-                        NumberOfCopies = null
-                    };
-                    
-                    unifiedList.Add(ticketRequest);
-                    Console.WriteLine($"Successfully added ticket {ticket.Id} to unified list");
+                        var assignedUser = await UserService.GetUserByIdAsync(ticket.AssignedToUserId.Value);
+                        if (assignedUser != null)
+                        {
+                            assignedUserName = assignedUser.Name;
+                            assignedUserEmail = assignedUser.Email;
+                            assignedDate = ticket.ModifiedDate;
+                        }
+                    }
+                    catch
+                    {
+        
+                    }
                 }
-                catch (Exception ticketEx)
-                {
-                    Console.WriteLine($"Error processing ticket {ticket.Id}: {ticketEx.Message}");
-                }
-            }
-            
-            var ticketCount = unifiedList.Count(r => r.Type == "Ticket");
-            Console.WriteLine($"=== Tickets processed: {ticketCount} ===");
-            
-            Console.WriteLine("=== Loading document requests ===");
-            var documentRequests = await DocumentRequestService.GetAllDocumentRequestsAsync();
-            Console.WriteLine($"Found {documentRequests.Count} document requests");
-            
-            foreach (var docReq in documentRequests)
-            {
-                var subject = $"Document Request #{docReq.Id} - {docReq.Company}";
-                var firstDocItem = docReq.DocumentItems?.FirstOrDefault();
                 
-                unifiedList.Add(new UnifiedRequestModel
+                var ticketRequest = new UnifiedRequestModel
                 {
-                    Id = docReq.Id,
-                    Type = "Document",
-                    Subject = subject,
-                    RequesterName = "System User",
-                    RequesterEmail = "system@company.com",
-                    Status = docReq.Status ?? "Pending",
-                    Department = "Legal",
-                    Category = "Document Request",
-                    CreatedDate = docReq.CreatedDate,
-                    Description = docReq.Particulars ?? "No particulars provided",
-                    Company = docReq.Company ?? "Unknown Company",
-                    DateNeeded = docReq.DateNeeded,
-                    TimeNeeded = docReq.TimeNeeded,
-                    DocumentName = firstDocItem?.DocumentName ?? "N/A",
-                    DocumentType = firstDocItem?.Type ?? "N/A",
-                    NumberOfCopies = firstDocItem?.NumberOfCopies ?? 0
-                });
+                    Id = ticket.Id,
+                    Type = "Ticket",
+                    Subject = ticket.Subject ?? $"Legal Ticket #{ticket.Id}",
+                    RequesterName = "Legal Department",
+                    RequesterEmail = "legal@company.com",
+                    Status = ticket.Status ?? "Pending",
+                    Department = ticket.Department ?? "Legal",
+                    Category = ticket.Category ?? "Legal Request",
+                    CreatedDate = ticket.CreatedDate,
+                    Description = ticket.Description ?? "No description",            
+                    Company = ticket.Company ?? "N/A",
+                    Location = ticket.Location ?? "N/A",
+                    DateNeeded = ticket.DateNeeded,
+                    TimeNeeded = ticket.TimeNeeded,
+                    AppReferenceNo = ticket.AppReferenceNo,
+                    RequestDate = ticket.RequestDate,
+                    AssignedToUserId = ticket.AssignedToUserId,
+                    AssignedToUserName = assignedUserName,
+                    AssignedToUserEmail = assignedUserEmail,
+                    AssignedDate = assignedDate,
+                    DocumentName = null,
+                    DocumentType = null,
+                    NumberOfCopies = null
+                };
+                
+                unifiedList.Add(ticketRequest);
+               
             }
-            
-            Console.WriteLine($"=== Total unified list count: {unifiedList.Count} ===");
-            var finalTicketCount = unifiedList.Count(r => r.Type == "Ticket");
-            var finalDocumentCount = unifiedList.Count(r => r.Type == "Document");
-            Console.WriteLine($"=== Tickets in list: {finalTicketCount} ===");
-            Console.WriteLine($"=== Documents in list: {finalDocumentCount} ===");
-            
-            allRequests = unifiedList;
-            filteredRequests = allRequests.ToList();
-            
-            Console.WriteLine($"=== Final filteredRequests count: {filteredRequests.Count} ===");
-            
-            await InvokeAsync(StateHasChanged);
+            catch
+            {
+                
+            }
         }
-        catch (Exception ex)
+        
+        var ticketCount = unifiedList.Count(r => r.Type == "Ticket");
+        var documentRequests = await DocumentRequestService.GetAllDocumentRequestsAsync();
+        
+        foreach (var docReq in documentRequests)
         {
-            Console.WriteLine($"MAJOR ERROR in LoadAllRequestsAsync: {ex.Message}");
-            Console.WriteLine($"Stack trace: {ex.StackTrace}");
-            allRequests = new List<UnifiedRequestModel>();
-            filteredRequests = new List<UnifiedRequestModel>();
+            var subject = $"Document Request #{docReq.Id} - {docReq.Company}";
+            var firstDocItem = docReq.DocumentItems?.FirstOrDefault();
+            
+            unifiedList.Add(new UnifiedRequestModel
+            {
+                Id = docReq.Id,
+                Type = "Document",
+                Subject = subject,
+                RequesterName = "System User",
+                RequesterEmail = "system@company.com",
+                Status = docReq.Status ?? "Pending",
+                Department = "Legal",
+                Category = "Document Request",
+                CreatedDate = docReq.CreatedDate,
+                Description = docReq.Particulars ?? "No particulars provided",
+                Company = docReq.Company ?? "Unknown Company",
+                DateNeeded = docReq.DateNeeded,
+                TimeNeeded = docReq.TimeNeeded,
+                DocumentName = firstDocItem?.DocumentName ?? "N/A",
+                DocumentType = firstDocItem?.Type ?? "N/A",
+                NumberOfCopies = firstDocItem?.NumberOfCopies ?? 0,
+                AssignedToUserId = null,
+                AssignedToUserName = null,
+                AssignedToUserEmail = null,
+                AssignedDate = null
+            });
         }
+        
+        var finalTicketCount = unifiedList.Count(r => r.Type == "Ticket");
+        var finalDocumentCount = unifiedList.Count(r => r.Type == "Document");
+        
+        allRequests = unifiedList;
+        filteredRequests = allRequests.ToList();
+        
+        await InvokeAsync(StateHasChanged);
     }
+    catch
+    {
+        allRequests = new List<UnifiedRequestModel>();
+        filteredRequests = new List<UnifiedRequestModel>();
+    }
+}
 
     // Filtering and Sorting
     private void OnSearchChanged(ChangeEventArgs e)
@@ -2227,19 +2311,8 @@ else
     }
 
     // Utility Methods
-    private string GetSortIcon(string column)
-    {
-        if (sortColumn != column) return "";
-        return sortDirection == "asc" ? "fa-sort-up" : "fa-sort-down";
-    }
-
 private async Task OpenAttachmentsModal(UnifiedRequestModel request)
 {
-    Console.WriteLine($"=== OpenAttachmentsModal ===");
-    Console.WriteLine($"Request Type: {request.Type}");
-    Console.WriteLine($"Request ID: {request.Id}");
-    Console.WriteLine($"Request Subject: {request.Subject}");
-    
     CloseActionsMenu();
     selectedRequestForAttachments = request;
     showAttachmentsModal = true;
@@ -2316,16 +2389,6 @@ private async Task LoadAttachmentsAsync(UnifiedRequestModel request)
                     UploadedDate = a.UploadedDate,
                     UploadedBy = a.UploadedByUser?.Name ?? "System User"
                 }).ToList();
-            }
-
-            // Show info toast about attachments loaded
-            if (currentAttachments.Any())
-            {
-                await ShowToast("Attachments Loaded", $"Found {currentAttachments.Count} attachment(s)", "info");
-            }
-            else
-            {
-                await ShowToast("No Attachments", "This request doesn't have any attachments.", "info");
             }
         }
         catch (Exception ex)
@@ -2412,5 +2475,9 @@ public class AttachmentModel
         public string? DocumentName { get; set; }
         public string? DocumentType { get; set; }
         public int? NumberOfCopies { get; set; }
+        public int? AssignedToUserId { get; set; }
+        public string? AssignedToUserName { get; set; }
+        public string? AssignedToUserEmail { get; set; }
+        public DateTime? AssignedDate { get; set; }
     }
 }
