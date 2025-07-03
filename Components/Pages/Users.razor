@@ -2080,49 +2080,43 @@
         isSubmitting = false;
     }
 
-    private async Task HandleValidSubmit()
+   private async Task HandleValidSubmit()
 {
     isSubmitting = true;
     StateHasChanged();
 
     try
     {
-        // Check if email already exists
-        bool emailExists = await UserService.EmailExistsAsync(newUser.Email);
-        if (emailExists)
-        {
-            await ShowToast("Error", $"Email '{newUser.Email}' already exists. Please use a different email address.", "error");
-            isSubmitting = false;
-            StateHasChanged();
-            return;
-        }
+        // Use the secure method with password hashing
+        var user = await UserService.CreateUserWithPasswordAsync(
+            name: newUser.Name,
+            email: newUser.Email,
+            role: newUser.Role,
+            department: newUser.Department,
+            plainTextPassword: newUser.Password,
+            phone: newUser.Phone,
+            location: newUser.Location,
+            status: newUser.Status
+        );
 
-        var user = new User
-        {
-            Name = newUser.Name,
-            Email = newUser.Email,
-            Role = newUser.Role,
-            Status = newUser.Status,
-            Department = newUser.Department,
-            Phone = newUser.Phone ?? "",
-            Location = newUser.Location ?? "",
-            PasswordHash = newUser.Password, // Note: In production, hash this password properly
-            CreatedDate = DateTime.Now,
-            LastLogin = null,
-            IsDeleted = false
-        };
-
-        await UserService.CreateUserAsync(user);
-        
         await LoadUsersFromDatabase();
         FilterAndSortUsers();
         
         CloseAddUserModal();
-        await ShowToast("Success!", $"User '{user.Name}' has been created!", "success");
+        await ShowToast("Success!", $"User '{user.Name}' has been created with secure password!", "success");
+    }
+    catch (InvalidOperationException ex)
+    {
+        await ShowToast("Error", ex.Message, "error");
+    }
+    catch (ArgumentException ex)
+    {
+        await ShowToast("Error", ex.Message, "error");
     }
     catch (Exception ex)
     {
         await ShowToast("Error", $"Error creating user: {ex.Message}", "error");
+        Console.WriteLine($"User creation error: {ex}");
     }
     finally
     {
@@ -2131,7 +2125,6 @@
     }
 }
 
-// Updated HandleEditSubmit method
 private async Task HandleEditSubmit()
 {
     if (editUser == null) return;
@@ -2141,7 +2134,6 @@ private async Task HandleEditSubmit()
 
     try
     {
-        // Check if email already exists for other users
         bool emailExists = await UserService.EmailExistsAsync(editUser.Email, editUser.Id);
         if (emailExists)
         {
@@ -2264,6 +2256,8 @@ public class NewUserModel
     [Required(ErrorMessage = "Password is required")]
     [MinLength(6, ErrorMessage = "Password must be at least 6 characters")]
     [StringLength(50, ErrorMessage = "Password must be less than 50 characters")]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$", 
+        ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, and one number")]
     public string Password { get; set; } = "";
 }
 
@@ -2296,6 +2290,7 @@ public class EditUserModel
     [Required(ErrorMessage = "Status is required")]
     public string Status { get; set; } = "Active";
 }
+
 
     public class ToastNotification
     {

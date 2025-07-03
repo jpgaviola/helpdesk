@@ -214,6 +214,7 @@ C:\Projects\helpdesk\bin\Debug\net9.0\HelpdeskBlazor.dll
 C:\Projects\helpdesk\bin\Debug\net9.0\HelpdeskBlazor.pdb
 C:\Projects\helpdesk\bin\Debug\net9.0\Azure.Core.dll
 C:\Projects\helpdesk\bin\Debug\net9.0\Azure.Identity.dll
+C:\Projects\helpdesk\bin\Debug\net9.0\BCrypt.Net-Next.dll
 C:\Projects\helpdesk\bin\Debug\net9.0\Humanizer.dll
 C:\Projects\helpdesk\bin\Debug\net9.0\Microsoft.Bcl.AsyncInterfaces.dll
 C:\Projects\helpdesk\bin\Debug\net9.0\Microsoft.Build.Locator.dll
@@ -352,6 +353,7 @@ C:\Projects\helpdesk\obj\Debug\net9.0\HelpdeskBlazor.csproj.CoreCompileInputs.ca
 C:\Projects\helpdesk\obj\Debug\net9.0\HelpdeskBlazor.MvcApplicationPartsAssemblyInfo.cache
 C:\Projects\helpdesk\obj\Debug\net9.0\HelpdeskBlazor.sourcelink.json
 C:\Projects\helpdesk\obj\Debug\net9.0\scopedcss\bundle\HelpdeskBlazor.styles.css
+C:\Projects\helpdesk\obj\Debug\net9.0\compressed\xzbwjcdze2-iz0a9a2ss2.gz
 C:\Projects\helpdesk\obj\Debug\net9.0\compressed\7kfknxfhyq-t1cqhe9u97.gz
 C:\Projects\helpdesk\obj\Debug\net9.0\compressed\fqann28jag-c2jlpeoesf.gz
 C:\Projects\helpdesk\obj\Debug\net9.0\compressed\e8tlr1idgt-sejl45xvog.gz
@@ -411,4 +413,3 @@ C:\Projects\helpdesk\obj\Debug\net9.0\refint\HelpdeskBlazor.dll
 C:\Projects\helpdesk\obj\Debug\net9.0\HelpdeskBlazor.pdb
 C:\Projects\helpdesk\obj\Debug\net9.0\HelpdeskBlazor.genruntimeconfig.cache
 C:\Projects\helpdesk\obj\Debug\net9.0\ref\HelpdeskBlazor.dll
-C:\Projects\helpdesk\obj\Debug\net9.0\compressed\xzbwjcdze2-iz0a9a2ss2.gz

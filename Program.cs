@@ -19,7 +19,6 @@ builder.Services.AddScoped<ITicketService, TicketService>();
 
 builder.Services.AddScoped<IDocumentRequestService, DocumentRequestService>();
 
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
