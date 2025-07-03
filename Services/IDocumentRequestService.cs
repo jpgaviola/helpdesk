@@ -10,6 +10,9 @@ namespace HelpdeskBlazor.Services
         Task<DocumentRequest> UpdateDocumentRequestAsync(DocumentRequest documentRequest);
         Task<bool> DeleteDocumentRequestAsync(int id);
         Task<DocumentRequestAttachment> AddAttachmentAsync(DocumentRequestAttachment attachment);
+        Task<DocumentRequestAttachment?> GetDocumentRequestAttachmentByIdAsync(int attachmentId);
+        Task<List<DocumentRequestAttachment>> GetDocumentRequestAttachmentsAsync(int documentRequestId);
+        Task<byte[]> DownloadAttachmentAsync(int attachmentId);
         Task<DocumentItem> AddDocumentItemAsync(DocumentItem documentItem);
     }
 }

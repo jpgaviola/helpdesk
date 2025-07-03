@@ -22,6 +22,95 @@ namespace HelpdeskBlazor.Services
                 .ToListAsync();
         }
 
+        public async Task<DocumentRequestAttachment?> GetDocumentRequestAttachmentByIdAsync(int attachmentId)
+        {
+            return await _context.DocumentRequestAttachments
+                .Include(dra => dra.UploadedByUser)
+                .FirstOrDefaultAsync(dra => dra.Id == attachmentId);
+        }
+
+        public async Task<List<DocumentRequestAttachment>> GetDocumentRequestAttachmentsAsync(int documentRequestId)
+        {
+            return await _context.DocumentRequestAttachments
+                .Include(dra => dra.UploadedByUser)
+                .Where(dra => dra.DocumentRequestId == documentRequestId)
+                .OrderByDescending(dra => dra.UploadedDate)
+                .ToListAsync();
+        }
+
+        public async Task<byte[]> DownloadAttachmentAsync(int attachmentId)
+        {
+
+            var attachment = await _context.TicketAttachments
+                .FirstOrDefaultAsync(ta => ta.Id == attachmentId);
+
+            if (attachment == null)
+            {
+
+                throw new FileNotFoundException("Attachment not found");
+            }
+
+            string actualFilePath = attachment.FilePath;
+
+            if (actualFilePath.StartsWith("/") && OperatingSystem.IsWindows())
+            {
+                actualFilePath = actualFilePath.Replace("/", "\\");
+
+                string[] possibleBasePaths = {
+            $"C:{actualFilePath}",
+            $"D:{actualFilePath}",
+            $".{actualFilePath}",
+            $"{Environment.CurrentDirectory}{actualFilePath}",
+            Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", actualFilePath.TrimStart('\\')),
+            Path.Combine(Directory.GetCurrentDirectory(), actualFilePath.TrimStart('\\'))
+        };
+
+                foreach (string testPath in possibleBasePaths)
+                {
+
+                    if (File.Exists(testPath))
+                    {
+                        actualFilePath = testPath;
+
+                        break;
+                    }
+                }
+            }
+
+            Console.WriteLine($"Final file path: {actualFilePath}");
+
+            if (!File.Exists(actualFilePath))
+            {
+                var commonUploadDirs = new[] {
+            Path.Combine(Directory.GetCurrentDirectory(), "uploads"),
+            Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads"),
+            @"C:\uploads",
+            @"D:\uploads"
+        };
+
+                foreach (var dir in commonUploadDirs)
+                {
+                    if (Directory.Exists(dir))
+                    {
+
+                        var files = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
+
+                        foreach (var file in files.Take(5))
+                        {
+                            Console.WriteLine($"    - {file}");
+                        }
+                    }
+                }
+
+                throw new FileNotFoundException($"File not found at path: {actualFilePath}");
+            }
+
+            var fileBytes = await File.ReadAllBytesAsync(actualFilePath);
+            Console.WriteLine($"Successfully read {fileBytes.Length} bytes from file");
+
+            return fileBytes;
+        }
+
         public async Task<DocumentRequest?> GetDocumentRequestByIdAsync(int id)
         {
             return await _context.DocumentRequests

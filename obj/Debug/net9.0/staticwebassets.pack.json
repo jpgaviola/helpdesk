@@ -189,6 +189,14 @@
       "PackagePath": "staticwebassets\\semirara.png"
     },
     {
+      "Id": "C:\\Projects\\helpdesk\\wwwroot\\uploads\\32\\d9105a95-1b6e-4598-a780-6a1c23db30aa_Screenshot 2025-06-24 151716.png",
+      "PackagePath": "staticwebassets\\uploads\\32\\d9105a95-1b6e-4598-a780-6a1c23db30aa_Screenshot 2025-06-24 151716.png"
+    },
+    {
+      "Id": "C:\\Projects\\helpdesk\\wwwroot\\uploads\\32\\e72fdb02-4a12-4260-b4f8-5624ba1a2134_Screenshot 2025-06-24 151648.png",
+      "PackagePath": "staticwebassets\\uploads\\32\\e72fdb02-4a12-4260-b4f8-5624ba1a2134_Screenshot 2025-06-24 151648.png"
+    },
+    {
       "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.HelpdeskBlazor.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
     },

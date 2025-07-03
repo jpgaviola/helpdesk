@@ -19,5 +19,8 @@ namespace HelpdeskBlazor.Services
         Task<TicketComment> AddCommentAsync(TicketComment comment);
         Task<TicketSignatory> AddTicketSignatoryAsync(TicketSignatory ticketSignatory);
         Task<List<TicketSignatory>> GetTicketSignatoriesAsync(int ticketId);
+        Task<List<TicketAttachment>> GetTicketAttachmentsAsync(int ticketId);
+        Task<byte[]> DownloadAttachmentAsync(int attachmentId);
+        Task<TicketAttachment?> GetTicketAttachmentByIdAsync(int attachmentId);
     }
 }

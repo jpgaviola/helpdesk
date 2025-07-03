@@ -326,7 +326,7 @@
         color: #666;
         text-decoration: none;
         cursor: pointer;
-        font-size: 13px;
+        font-size: 10px;
         border: none;
         background: none;
         width: 100%;
@@ -904,6 +904,103 @@
     color: #666;
 }
 
+.attachments-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border: 1px solid #E7EAEE;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.attachment-item:hover {
+    background: #e9ecef;
+    border-color: #ff6b35;
+}
+
+.attachment-icon {
+    font-size: 24px;
+    width: 40px;
+    text-align: center;
+    color: #666;
+}
+
+.attachment-icon.pdf { color: #dc3545; }
+.attachment-icon.word { color: #007bff; }
+.attachment-icon.excel { color: #28a745; }
+.attachment-icon.powerpoint { color: #fd7e14; }
+.attachment-icon.image { color: #6f42c1; }
+.attachment-icon.archive { color: #6c757d; }
+
+.attachment-info {
+    flex: 1;
+}
+
+.attachment-name {
+    font-weight: 600;
+    color: #0A1A28;
+    margin-bottom: 4px;
+    word-break: break-all;
+}
+
+.attachment-meta {
+    font-size: 12px;
+    color: #666;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.attachment-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.download-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.download-btn:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
+.no-attachments {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
+.no-attachments i {
+    font-size: 48px;
+    color: #ddd;
+    margin-bottom: 15px;
+}
+
+.attachments-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666;
+}
+
 </style>
 
 <div class="tickets-container">
@@ -1022,7 +1119,12 @@
                                 <i class="fas fa-ellipsis-v"></i>
                             </button>
                             <div class="actions-menu @(activeDropdown == request.Id ? "show" : "")">
-                                <!-- Change Status menu item (now opens modal) -->
+                                <!-- View Attachments  -->
+                                <button class="actions-menu-item" @onclick="() => OpenAttachmentsModal(request)" @onclick:stopPropagation="true">
+                                    <i class="fas fa-paperclip"></i>
+                                    View Attachments
+                                </button>
+                                <!-- Change Status -->
                                 <button class="actions-menu-item" @onclick="() => OpenStatusModal(request)" @onclick:stopPropagation="true">
                                     <i class="fas fa-exchange-alt"></i>
                                     Change Status
@@ -1255,8 +1357,94 @@ else
     </div>
 </div>
 
+<!-- Attachments Modal -->
+<div class="modal-overlay @(showAttachmentsModal ? "show" : "")" @onclick="CloseAttachmentsModal">
+    <div class="modal-content" @onclick:stopPropagation="true">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-paperclip"></i>
+                Attachments - @(selectedRequestForAttachments?.Type) #@(selectedRequestForAttachments?.Id)
+            </h3>
+            <button class="modal-close" @onclick="CloseAttachmentsModal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="modal-body">
+            @if (selectedRequestForAttachments != null)
+            {
+                <div class="form-group">
+                    <label class="form-label">Request Details</label>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <strong>@selectedRequestForAttachments.Subject</strong><br>
+                        <span style="color: #666;">@selectedRequestForAttachments.RequesterName</span><br>
+                        <small style="color: #999;">Created: @selectedRequestForAttachments.CreatedDate.ToString("MMM dd, yyyy")</small>
+                    </div>
+                </div>
+                
+                @if (isLoadingAttachments)
+                {
+                    <div class="attachments-loading">
+                        <div class="loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 15px;"></div>
+                        <p>Loading attachments...</p>
+                    </div>
+                }
+                else if (currentAttachments.Any())
+                {
+                    <div class="form-group">
+                        <label class="form-label">Attachments (@currentAttachments.Count)</label>
+                        <div class="attachments-list">
+                            @foreach (var attachment in currentAttachments)
+                            {
+                                <div class="attachment-item">
+                                    <div class="attachment-icon @GetFileIcon(attachment.ContentType).Replace("fas fa-file-", "")">
+                                        <i class="@GetFileIcon(attachment.ContentType)"></i>
+                                    </div>
+                                    
+                                    <div class="attachment-info">
+                                        <div class="attachment-name">@attachment.FileName</div>
+                                        <div class="attachment-meta">
+                                            <span><i class="fas fa-weight"></i> @FormatFileSize(attachment.FileSize)</span>
+                                            <span><i class="fas fa-calendar"></i> @attachment.UploadedDate.ToString("MMM dd, yyyy")</span>
+                                            <span><i class="fas fa-user"></i> @attachment.UploadedBy</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="attachment-actions">
+                                        <button class="download-btn" @onclick="() => DownloadAttachment(attachment)">
+                                            <i class="fas fa-download"></i>
+                                            Download
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="no-attachments">
+                        <i class="fas fa-paperclip"></i>
+                        <h4>No Attachments</h4>
+                        <p>This @(selectedRequestForAttachments.Type.ToLower()) doesn't have any attachments yet.</p>
+                    </div>
+                }
+            }
+        </div>
+        
+        <div class="modal-footer">
+            <button class="btn btn-secondary" @onclick="CloseAttachmentsModal">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
 @code {
-    // Properties and Fields
+    private bool showAttachmentsModal = false;
+    private UnifiedRequestModel? selectedRequestForAttachments = null;
+    private List<AttachmentModel> currentAttachments = new List<AttachmentModel>();
+    private bool isLoadingAttachments = false;
     private bool showStatusModal = false;
     private UnifiedRequestModel? selectedRequest = null;
     private string selectedStatus = "";
@@ -1742,6 +1930,145 @@ else
         if (sortColumn != column) return "";
         return sortDirection == "asc" ? "fa-sort-up" : "fa-sort-down";
     }
+
+private async Task OpenAttachmentsModal(UnifiedRequestModel request)
+{
+    Console.WriteLine($"=== OpenAttachmentsModal ===");
+    Console.WriteLine($"Request Type: {request.Type}");
+    Console.WriteLine($"Request ID: {request.Id}");
+    Console.WriteLine($"Request Subject: {request.Subject}");
+    
+    CloseActionsMenu();
+    selectedRequestForAttachments = request;
+    showAttachmentsModal = true;
+    
+    await LoadAttachmentsAsync(request);
+    StateHasChanged();
+}
+
+private void CloseAttachmentsModal()
+{
+    showAttachmentsModal = false;
+    selectedRequestForAttachments = null;
+    currentAttachments.Clear();
+    StateHasChanged();
+}
+
+private async Task DownloadAttachment(AttachmentModel attachment)
+{
+    try
+    {
+        byte[] fileBytes;
+        
+        if (selectedRequestForAttachments?.Type == "Ticket")
+        {
+            fileBytes = await TicketService.DownloadAttachmentAsync(attachment.Id);
+        }
+        else
+        {
+            fileBytes = await DocumentRequestService.DownloadAttachmentAsync(attachment.Id);
+        }
+    
+        var base64 = Convert.ToBase64String(fileBytes);
+        await JSRuntime.InvokeVoidAsync("downloadFile", attachment.FileName, base64, attachment.ContentType);
+    }
+    catch (Exception ex)
+    {
+       
+        await JSRuntime.InvokeVoidAsync("alert", $"Error downloading file: {ex.Message}");
+    }
+}
+private async Task LoadAttachmentsAsync(UnifiedRequestModel request)
+{
+    try
+    {
+        isLoadingAttachments = true;
+        currentAttachments.Clear();
+        
+        if (request.Type == "Ticket")
+        {
+            var ticketAttachments = await TicketService.GetTicketAttachmentsAsync(request.Id);
+            currentAttachments = ticketAttachments.Select(a => new AttachmentModel
+            {
+                Id = a.Id,
+                FileName = a.FileName,
+                FilePath = a.FilePath,
+                ContentType = a.ContentType,
+                FileSize = a.FileSize,
+                UploadedDate = a.UploadedDate,
+                UploadedBy = a.UploadedByUser?.Name ?? "System User" // Use appropriate property
+            }).ToList();
+        }
+        else
+        {
+            var docAttachments = await DocumentRequestService.GetDocumentRequestAttachmentsAsync(request.Id);
+            currentAttachments = docAttachments.Select(a => new AttachmentModel
+            {
+                Id = a.Id,
+                FileName = a.FileName,
+                FilePath = a.FilePath,
+                ContentType = a.ContentType,
+                FileSize = a.FileSize,
+                UploadedDate = a.UploadedDate,
+                UploadedBy = a.UploadedByUser?.Name ?? "System User" // Use appropriate property
+            }).ToList();
+        }
+        
+       
+    }
+    catch (Exception ex)
+    {
+        
+        await JSRuntime.InvokeVoidAsync("alert", $"Error loading attachments: {ex.Message}");
+    }
+    finally
+    {
+        isLoadingAttachments = false;
+        StateHasChanged();
+    }
+}
+
+
+private string FormatFileSize(long bytes)
+{
+    string[] sizes = { "B", "KB", "MB", "GB" };
+    double len = bytes;
+    int order = 0;
+    while (len >= 1024 && order < sizes.Length - 1)
+    {
+        order++;
+        len = len / 1024;
+    }
+    return $"{len:0.##} {sizes[order]}";
+}
+
+private string GetFileIcon(string contentType)
+{
+    return contentType.ToLower() switch
+    {
+        var ct when ct.Contains("pdf") => "fas fa-file-pdf",
+        var ct when ct.Contains("word") => "fas fa-file-word",
+        var ct when ct.Contains("excel") || ct.Contains("spreadsheet") => "fas fa-file-excel",
+        var ct when ct.Contains("powerpoint") || ct.Contains("presentation") => "fas fa-file-powerpoint",
+        var ct when ct.Contains("image") => "fas fa-file-image",
+        var ct when ct.Contains("video") => "fas fa-file-video",
+        var ct when ct.Contains("audio") => "fas fa-file-audio",
+        var ct when ct.Contains("text") => "fas fa-file-alt",
+        var ct when ct.Contains("zip") || ct.Contains("rar") || ct.Contains("archive") => "fas fa-file-archive",
+        _ => "fas fa-file"
+    };
+}
+
+public class AttachmentModel
+{
+    public int Id { get; set; }
+    public string FileName { get; set; } = "";
+    public string FilePath { get; set; } = "";
+    public string ContentType { get; set; } = "";
+    public long FileSize { get; set; }
+    public DateTime UploadedDate { get; set; }
+    public string UploadedBy { get; set; } = "";
+}
 
     public class UnifiedRequestModel
     {

@@ -163,6 +163,129 @@ namespace HelpdeskBlazor.Services
             return attachment;
         }
 
+        public async Task<List<TicketAttachment>> GetTicketAttachmentsAsync(int ticketId)
+        {
+
+            var attachments = await _context.TicketAttachments
+                .Include(ta => ta.UploadedByUser)
+                .Where(ta => ta.TicketId == ticketId)
+                .OrderByDescending(ta => ta.UploadedDate)
+                .ToListAsync();
+
+
+
+            if (attachments.Count == 0)
+            {
+                var allAttachments = await _context.TicketAttachments.ToListAsync();
+
+                foreach (var att in allAttachments)
+                {
+
+                }
+            }
+            else
+            {
+                foreach (var attachment in attachments)
+                {
+
+                }
+            }
+
+            return attachments;
+        }
+
+        public async Task<TicketAttachment?> GetTicketAttachmentByIdAsync(int attachmentId)
+        {
+
+            var attachment = await _context.TicketAttachments
+                .Include(ta => ta.UploadedByUser)
+                .FirstOrDefaultAsync(ta => ta.Id == attachmentId);
+
+            if (attachment == null)
+            {
+
+                // Debug: Show what attachments DO exist
+                var allAttachments = await _context.TicketAttachments.Select(a => new { a.Id, a.FileName }).ToListAsync();
+
+                foreach (var att in allAttachments)
+                {
+
+                }
+            }
+            else
+            {
+
+            }
+
+            return attachment;
+        }
+
+        public async Task<byte[]> DownloadAttachmentAsync(int attachmentId)
+        {
+
+            var attachment = await _context.TicketAttachments
+                .FirstOrDefaultAsync(ta => ta.Id == attachmentId);
+
+            if (attachment == null)
+            {
+                throw new FileNotFoundException("Attachment not found");
+            }
+            string actualFilePath = attachment.FilePath;
+
+            if (actualFilePath.StartsWith("/") && OperatingSystem.IsWindows())
+            {
+                actualFilePath = actualFilePath.Replace("/", "\\");
+
+                string[] possibleBasePaths = {
+            $"C:{actualFilePath}",
+            $"D:{actualFilePath}",
+            $".{actualFilePath}",
+            $"{Environment.CurrentDirectory}{actualFilePath}",
+            Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", actualFilePath.TrimStart('\\')),
+            Path.Combine(Directory.GetCurrentDirectory(), actualFilePath.TrimStart('\\'))
+        };
+
+                foreach (string testPath in possibleBasePaths)
+                {
+                    if (File.Exists(testPath))
+                    {
+                        actualFilePath = testPath;
+                        break;
+                    }
+                }
+            }
+
+            if (!File.Exists(actualFilePath))
+            {
+                var commonUploadDirs = new[] {
+            Path.Combine(Directory.GetCurrentDirectory(), "uploads"),
+            Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads"),
+            @"C:\uploads",
+            @"D:\uploads"
+        };
+
+                foreach (var dir in commonUploadDirs)
+                {
+                    if (Directory.Exists(dir))
+                    {
+
+                        var files = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
+
+                        foreach (var file in files.Take(5))
+                        {
+
+                        }
+                    }
+                }
+
+                throw new FileNotFoundException($"File not found at path: {actualFilePath}");
+            }
+
+            var fileBytes = await File.ReadAllBytesAsync(actualFilePath);
+
+            return fileBytes;
+        }
+
         public async Task<TicketComment> AddCommentAsync(TicketComment comment)
         {
             comment.CreatedDate = DateTime.Now;

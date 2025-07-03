@@ -846,5 +846,41 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\semirara.png'))</OriginalItemSpec>
     </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\32\d9105a95-1b6e-4598-a780-6a1c23db30aa_Screenshot 2025-06-24 151716.png'))">
+      <SourceType>Package</SourceType>
+      <SourceId>HelpdeskBlazor</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/HelpdeskBlazor</BasePath>
+      <RelativePath>uploads/32/d9105a95-1b6e-4598-a780-6a1c23db30aa_Screenshot 2025-06-24 151716.png</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>etoqrbg6kc</Fingerprint>
+      <Integrity>IodWXVD41ow6/tjG9U91AOfHGyfi/gBDXUCVRzWx+0Q=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\32\d9105a95-1b6e-4598-a780-6a1c23db30aa_Screenshot 2025-06-24 151716.png'))</OriginalItemSpec>
+    </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\32\e72fdb02-4a12-4260-b4f8-5624ba1a2134_Screenshot 2025-06-24 151648.png'))">
+      <SourceType>Package</SourceType>
+      <SourceId>HelpdeskBlazor</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/HelpdeskBlazor</BasePath>
+      <RelativePath>uploads/32/e72fdb02-4a12-4260-b4f8-5624ba1a2134_Screenshot 2025-06-24 151648.png</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>3g2xb5dwhm</Fingerprint>
+      <Integrity>o3nL7tU+VK5cepdZlwa5h5YiHjUhOf0ueMDsja+EgCI=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\32\e72fdb02-4a12-4260-b4f8-5624ba1a2134_Screenshot 2025-06-24 151648.png'))</OriginalItemSpec>
+    </StaticWebAsset>
   </ItemGroup>
 </Project>
