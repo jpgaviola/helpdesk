@@ -19,7 +19,7 @@
                 <div class="logo">
                     <i class="fas fa-headset"></i>
                 </div>
-                <h2>Welcome to Helpdesk System</h2>
+                <h2>Helpdesk System</h2>
                 <p>Your comprehensive IT support solution for seamless business operations</p>
 
                 <div class="features">
@@ -46,8 +46,25 @@
         <!-- Right Side - Login Form -->
         <div class="login-right">
             <div class="company-logo">
-                <img src="semirara.png" alt="Semirara Mining"
-                    style="max-width: 200px; height: auto; margin-bottom: 20px;" />
+                @if (!string.IsNullOrEmpty(loginModel.Domain))
+                {
+                    @switch (loginModel.Domain.ToUpper())
+                    {
+                        case "SCPC":
+                            <img src="scpc.png" alt="SCPC" class="domain-logo" />
+                            break;
+                        case "SMPC":
+                            <img src="semirara.png" alt="Semirara Mining" class="domain-logo" />
+                            break;
+                        case "SLPGC":
+                            <img src="slpgc.png" alt="SLPGC" class="domain-logo" />
+                            break;
+                    }
+                }
+                else
+                {
+                    <img src="semirara.png" alt="Semirara Mining" class="domain-logo default-logo" />
+                }
             </div>
 
             <!-- Error/Success Messages -->
@@ -74,8 +91,8 @@
                     <div class="input-container">
                         <InputSelect @bind-Value="loginModel.Domain" class="form-control" id="domain">
                             <option value="">Select Domain</option>
-                            <option value="SCPC">SCPC</option>
                             <option value="SMPC">SMPC</option>
+                            <option value="SCPC">SCPC</option>
                             <option value="SLPGC">SLPGC</option>
                         </InputSelect>
                         <i class="fas fa-building input-icon"></i>
