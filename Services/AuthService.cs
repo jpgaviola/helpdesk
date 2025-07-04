@@ -14,14 +14,14 @@ namespace HelpdeskBlazor.Services
             _context = context;
         }
 
-        public async Task<User?> AuthenticateAsync(string emailOrUsername, string password)
+        public async Task<User?> AuthenticateAsync(string emailOrUsername, string password, string domain)
         {
-            if (string.IsNullOrEmpty(emailOrUsername) || string.IsNullOrEmpty(password))
+            if (string.IsNullOrEmpty(emailOrUsername) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(domain))
                 return null;
 
-            // Try to find user by email first, then by name
             var user = await _context.Users
                 .Where(u => !u.IsDeleted && u.Status == "Active" &&
+                           u.Domain == domain &&
                            (u.Email.ToLower() == emailOrUsername.ToLower() ||
                             u.Name.ToLower() == emailOrUsername.ToLower()))
                 .FirstOrDefaultAsync();
@@ -29,13 +29,10 @@ namespace HelpdeskBlazor.Services
             if (user == null || string.IsNullOrEmpty(user.PasswordHash))
                 return null;
 
-            // Verify password using BCrypt
             bool isPasswordValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
-
             if (!isPasswordValid)
                 return null;
 
-            // Update last login
             await UpdateLastLoginAsync(user.Id);
 
             return user;
@@ -55,6 +52,15 @@ namespace HelpdeskBlazor.Services
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<User?> GetUserByEmailAndDomainAsync(string email, string domain)
+        {
+            return await _context.Users
+                .Where(u => !u.IsDeleted &&
+                           u.Email.ToLower() == email.ToLower() &&
+                           u.Domain == domain)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task UpdateLastLoginAsync(int userId)
         {
             var user = await _context.Users.FindAsync(userId);
@@ -63,6 +69,18 @@ namespace HelpdeskBlazor.Services
                 user.LastLogin = DateTime.Now;
                 await _context.SaveChangesAsync();
             }
+        }
+
+        public async Task<List<string>> GetAvailableDomainsAsync()
+        {
+            var domains = await _context.Users
+                .Where(u => !u.IsDeleted && !string.IsNullOrEmpty(u.Domain))
+                .Select(u => u.Domain!)
+                .Distinct()
+                .OrderBy(d => d)
+                .ToListAsync();
+
+            return domains;
         }
     }
 }

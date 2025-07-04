@@ -185,16 +185,20 @@
       "PackagePath": "staticwebassets\\lib\\bootstrap\\dist\\js\\bootstrap.min.js.map"
     },
     {
+      "Id": "C:\\Projects\\helpdesk\\wwwroot\\scpc.png",
+      "PackagePath": "staticwebassets\\scpc.png"
+    },
+    {
       "Id": "C:\\Projects\\helpdesk\\wwwroot\\semirara.png",
       "PackagePath": "staticwebassets\\semirara.png"
     },
     {
-      "Id": "C:\\Projects\\helpdesk\\wwwroot\\uploads\\33\\fffa4e33-6452-45ed-92b4-4c027b0d2768_Screenshot 2025-06-24 151648.png",
-      "PackagePath": "staticwebassets\\uploads\\33\\fffa4e33-6452-45ed-92b4-4c027b0d2768_Screenshot 2025-06-24 151648.png"
+      "Id": "C:\\Projects\\helpdesk\\wwwroot\\slpgc.png",
+      "PackagePath": "staticwebassets\\slpgc.png"
     },
     {
-      "Id": "C:\\Projects\\helpdesk\\wwwroot\\uploads\\documents\\9\\c8d32e9a-6d2e-4ced-a1cc-bbf347ef3612_Screenshot 2025-06-24 151648.png",
-      "PackagePath": "staticwebassets\\uploads\\documents\\9\\c8d32e9a-6d2e-4ced-a1cc-bbf347ef3612_Screenshot 2025-06-24 151648.png"
+      "Id": "C:\\Projects\\helpdesk\\wwwroot\\uploads\\38\\0729aef9-2bd2-47bb-ab13-5c3c3d8f2c12_Screenshot 2025-06-24 151648.png",
+      "PackagePath": "staticwebassets\\uploads\\38\\0729aef9-2bd2-47bb-ab13-5c3c3d8f2c12_Screenshot 2025-06-24 151648.png"
     },
     {
       "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.HelpdeskBlazor.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",

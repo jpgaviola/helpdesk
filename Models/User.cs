@@ -60,6 +60,9 @@ namespace HelpdeskBlazor.Models
         [Required]
         public bool IsDeleted { get; set; } = false;
 
+        [StringLength(10)]
+        public string? Domain { get; set; }
+
         [ForeignKey("CreatedBy")]
         public virtual User? CreatedByUser { get; set; }
 

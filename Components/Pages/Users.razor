@@ -1098,6 +1098,24 @@
     transform: none;
     box-shadow: none;
 }
+
+.domain-badge {
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    display: inline-block;
+    min-width: fit-content;
+    text-align: center;
+    line-height: 1.2;
+    vertical-align: middle;
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
 </style>
 
 <div class="users-container">
@@ -1302,6 +1320,11 @@
                 </div>
 
                 <div class="user-detail-section">
+                    <div class="user-detail-label">Domain</div>
+                    <div class="user-detail-value">@(selectedUser.Domain ?? "Not specified")</div>
+                </div>
+
+                <div class="user-detail-section">
                     <div class="user-detail-label">Status</div>
                     <div class="user-detail-value">
                         <span class="status-badge status-@selectedUser.Status.ToLower()">@selectedUser.Status</span>
@@ -1400,6 +1423,19 @@
                         <ValidationMessage For="() => newUser.Role" />
                     </div>
                     <div class="form-group">
+                        <label class="form-label">Domain *</label>
+                        <InputSelect class="form-select" @bind-Value="newUser.Domain">
+                            <option value="">Select Domain</option>
+                            <option value="SCPC">SCPC</option>
+                            <option value="SMPC">SMPC</option>
+                            <option value="SLPGC">SLPGC</option>
+                        </InputSelect>
+                        <ValidationMessage For="() => newUser.Domain" />
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
                         <label class="form-label">Department *</label>
                         <InputSelect class="form-select" @bind-Value="newUser.Department">
                             <option value="">Select Department</option>
@@ -1411,6 +1447,11 @@
                             <option value="Facilities">Facilities</option>
                         </InputSelect>
                         <ValidationMessage For="() => newUser.Department" />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <InputText class="form-input" @bind-Value="newUser.Phone" placeholder="+63 917 XXX XXXX" />
+                        <ValidationMessage For="() => newUser.Phone" />
                     </div>
                 </div>
 
@@ -1507,6 +1548,19 @@
                             <ValidationMessage For="() => editUser.Role" />
                         </div>
                         <div class="form-group">
+                            <label class="form-label">Domain *</label>
+                            <InputSelect class="form-select" @bind-Value="editUser.Domain">
+                                <option value="">Select Domain</option>
+                                <option value="SCPC">SCPC</option>
+                                <option value="SMPC">SMPC</option>
+                                <option value="SLPGC">SLPGC</option>
+                            </InputSelect>
+                            <ValidationMessage For="() => editUser.Domain" />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
                             <label class="form-label">Department *</label>
                             <InputSelect class="form-select" @bind-Value="editUser.Department">
                                 <option value="">Select Department</option>
@@ -1518,6 +1572,11 @@
                                 <option value="Facilities">Facilities</option>
                             </InputSelect>
                             <ValidationMessage For="() => editUser.Department" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Phone Number</label>
+                            <InputText class="form-input" @bind-Value="editUser.Phone" placeholder="+63 917 XXX XXXX" />
+                            <ValidationMessage For="() => editUser.Phone" />
                         </div>
                     </div>
 
@@ -2107,20 +2166,20 @@
         isSubmitting = false;
     }
 
-   private async Task HandleValidSubmit()
+    private async Task HandleValidSubmit()
 {
     isSubmitting = true;
     StateHasChanged();
 
     try
     {
-        // Use the secure method with password hashing
         var user = await UserService.CreateUserWithPasswordAsync(
             name: newUser.Name,
             email: newUser.Email,
             role: newUser.Role,
             department: newUser.Department,
             plainTextPassword: newUser.Password,
+            domain: newUser.Domain,
             phone: newUser.Phone,
             location: newUser.Location,
             status: newUser.Status
@@ -2130,7 +2189,7 @@
         FilterAndSortUsers();
         
         CloseAddUserModal();
-        await ShowToast("Success!", $"User '{user.Name}' has been created with secure password!", "success");
+        await ShowToast("Success!", $"User '{user.Name}' has been created with domain '{user.Domain}'!", "success");
     }
     catch (InvalidOperationException ex)
     {
@@ -2178,6 +2237,7 @@ private async Task HandleEditSubmit()
             userToUpdate.Role = editUser.Role;
             userToUpdate.Status = editUser.Status;
             userToUpdate.Department = editUser.Department;
+            userToUpdate.Domain = editUser.Domain;
             userToUpdate.Phone = editUser.Phone;
             userToUpdate.Location = editUser.Location;
             userToUpdate.ModifiedDate = DateTime.Now;
@@ -2271,6 +2331,9 @@ private async Task HandleEditSubmit()
                 [Required(ErrorMessage = "Department is required")]
                 public string Department { get; set; } = "";
 
+                [Required(ErrorMessage = "Domain is required")]
+                public string Domain { get; set; } = "";
+
                 [Phone(ErrorMessage = "Please enter a valid phone number")]
                 [StringLength(20, ErrorMessage = "Phone number must be less than 20 characters")]
                 public string? Phone { get; set; }
@@ -2306,6 +2369,9 @@ private async Task HandleEditSubmit()
 
         [Required(ErrorMessage = "Department is required")]
         public string Department { get; set; } = "";
+
+        [Required(ErrorMessage = "Domain is required")]
+        public string Domain { get; set; } = "";
 
         [Phone(ErrorMessage = "Please enter a valid phone number")]
         [StringLength(20, ErrorMessage = "Phone number must be less than 20 characters")]

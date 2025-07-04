@@ -12,8 +12,8 @@
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>zy6gzhhzk6</Fingerprint>
-      <Integrity>tcGfCuwGlsy6WGcjEgMqLTXomo+wI0S2BjjeB56HztE=</Integrity>
+      <Fingerprint>5gwvdp0is7</Fingerprint>
+      <Integrity>BWc2/INCcXl4dDOCc/V1fKrWmQLLyiXR+EyJZtcr2Ak=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\app.css'))</OriginalItemSpec>
@@ -828,6 +828,24 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\lib\bootstrap\dist\js\bootstrap.min.js.map'))</OriginalItemSpec>
     </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\scpc.png'))">
+      <SourceType>Package</SourceType>
+      <SourceId>HelpdeskBlazor</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/HelpdeskBlazor</BasePath>
+      <RelativePath>scpc.png</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>iyj783jzym</Fingerprint>
+      <Integrity>Nrsijic6cXv3dHrq5052IeNYLuz7vRcC964Ravnmncs=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\scpc.png'))</OriginalItemSpec>
+    </StaticWebAsset>
     <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\semirara.png'))">
       <SourceType>Package</SourceType>
       <SourceId>HelpdeskBlazor</SourceId>
@@ -846,30 +864,30 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\semirara.png'))</OriginalItemSpec>
     </StaticWebAsset>
-    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\33\fffa4e33-6452-45ed-92b4-4c027b0d2768_Screenshot 2025-06-24 151648.png'))">
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\slpgc.png'))">
       <SourceType>Package</SourceType>
       <SourceId>HelpdeskBlazor</SourceId>
       <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
       <BasePath>_content/HelpdeskBlazor</BasePath>
-      <RelativePath>uploads/33/fffa4e33-6452-45ed-92b4-4c027b0d2768_Screenshot 2025-06-24 151648.png</RelativePath>
+      <RelativePath>slpgc.png</RelativePath>
       <AssetKind>All</AssetKind>
       <AssetMode>All</AssetMode>
       <AssetRole>Primary</AssetRole>
       <RelatedAsset></RelatedAsset>
       <AssetTraitName></AssetTraitName>
       <AssetTraitValue></AssetTraitValue>
-      <Fingerprint>3g2xb5dwhm</Fingerprint>
-      <Integrity>o3nL7tU+VK5cepdZlwa5h5YiHjUhOf0ueMDsja+EgCI=</Integrity>
+      <Fingerprint>qd3erl1zms</Fingerprint>
+      <Integrity>nkd1NQn9+usXX4rf+A4xmOuSf37TzKZ9fCRXyBFEplg=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\33\fffa4e33-6452-45ed-92b4-4c027b0d2768_Screenshot 2025-06-24 151648.png'))</OriginalItemSpec>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\slpgc.png'))</OriginalItemSpec>
     </StaticWebAsset>
-    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\documents\9\c8d32e9a-6d2e-4ced-a1cc-bbf347ef3612_Screenshot 2025-06-24 151648.png'))">
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\38\0729aef9-2bd2-47bb-ab13-5c3c3d8f2c12_Screenshot 2025-06-24 151648.png'))">
       <SourceType>Package</SourceType>
       <SourceId>HelpdeskBlazor</SourceId>
       <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
       <BasePath>_content/HelpdeskBlazor</BasePath>
-      <RelativePath>uploads/documents/9/c8d32e9a-6d2e-4ced-a1cc-bbf347ef3612_Screenshot 2025-06-24 151648.png</RelativePath>
+      <RelativePath>uploads/38/0729aef9-2bd2-47bb-ab13-5c3c3d8f2c12_Screenshot 2025-06-24 151648.png</RelativePath>
       <AssetKind>All</AssetKind>
       <AssetMode>All</AssetMode>
       <AssetRole>Primary</AssetRole>
@@ -880,7 +898,7 @@
       <Integrity>o3nL7tU+VK5cepdZlwa5h5YiHjUhOf0ueMDsja+EgCI=</Integrity>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\documents\9\c8d32e9a-6d2e-4ced-a1cc-bbf347ef3612_Screenshot 2025-06-24 151648.png'))</OriginalItemSpec>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\38\0729aef9-2bd2-47bb-ab13-5c3c3d8f2c12_Screenshot 2025-06-24 151648.png'))</OriginalItemSpec>
     </StaticWebAsset>
   </ItemGroup>
 </Project>
