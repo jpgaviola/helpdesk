@@ -783,10 +783,10 @@
 
                         <!-- Particulars/Reason -->
                         <div class="form-group full-width">
-                            <label class="form-label required">Particulars/Reason</label>
-                            <InputTextArea @bind-Value="requestModel.Particulars" class="form-textarea"
-                                placeholder="Please provide detailed reason for the document request..." />
-                            <ValidationMessage For="@(() => requestModel.Particulars)" class="error-message" />
+                            <label class="form-label required">Particulars/Reason for this Document</label>
+                            <InputTextArea @bind-Value="document.Particulars" class="form-textarea"
+                                placeholder="Please provide detailed reason for this specific document..." />
+                            <ValidationMessage For="@(() => document.Particulars)" class="error-message" />
                         </div>
                     </EditForm>
                 </div>
@@ -1074,12 +1074,7 @@
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(requestModel.Particulars))
-        {
-            await ShowToast("Validation Error", "Please provide particulars/reason for the request.", "error");
-            return;
-        }
-
+        // Validate each document individually
         for (int i = 0; i < documents.Count; i++)
         {
             var doc = documents[i];
@@ -1098,6 +1093,11 @@
                 await ShowToast("Validation Error", $"Please enter a valid number of copies for Document #{i + 1}.", "error");
                 return;
             }
+            if (string.IsNullOrWhiteSpace(doc.Particulars))
+            {
+                await ShowToast("Validation Error", $"Please provide particulars/reason for Document #{i + 1}.", "error");
+                return;
+            }
         }
 
         isSubmitting = true;
@@ -1108,7 +1108,7 @@
                 Company = requestModel.Company,
                 DateNeeded = requestModel.DateNeeded,
                 TimeNeeded = requestModel.TimeNeeded,
-                Particulars = requestModel.Particulars,
+                Particulars = $"Multiple documents requested: {string.Join(", ", documents.Select(d => d.DocumentName))}",
                 Status = "Pending",
                 CreatedBy = SessionService.CurrentUser?.Id,
                 RequesterName = SessionService.CurrentUser?.Name,
@@ -1130,6 +1130,7 @@
                     DocumentName = doc.DocumentName,
                     Type = doc.Type,
                     NumberOfCopies = doc.NumberOfCopies,
+                    Particulars = doc.Particulars,
                     CreatedDate = DateTime.Now
                 };
 
@@ -1310,10 +1311,6 @@
 
         [Required(ErrorMessage = "Time Needed is required")]
         public TimeOnly TimeNeeded { get; set; } = new TimeOnly(9, 0);
-
-        [Required(ErrorMessage = "Particulars/Reason is required")]
-        [StringLength(2000, MinimumLength = 10, ErrorMessage = "Particulars must be between 10 and 2000 characters")]
-        public string Particulars { get; set; } = "";
     }
 
     public class DocumentItemModel
@@ -1328,6 +1325,10 @@
         [Required(ErrorMessage = "Number of Copies is required")]
         [Range(1, 100, ErrorMessage = "Number of Copies must be between 1 and 100")]
         public int NumberOfCopies { get; set; } = 1;
+
+        [Required(ErrorMessage = "Particulars/Reason is required")]
+        [StringLength(2000, MinimumLength = 10, ErrorMessage = "Particulars must be between 10 and 2000 characters")]
+        public string Particulars { get; set; } = "";
 
         public List<IBrowserFile>? Attachments { get; set; } = new();
     }

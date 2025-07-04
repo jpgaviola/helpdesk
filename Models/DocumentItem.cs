@@ -6,29 +6,28 @@ namespace HelpdeskBlazor.Models
     [Table("DocumentItems")]
     public class DocumentItem
     {
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
-
-        [Required]
         public int DocumentRequestId { get; set; }
 
-        [Required]
-        [StringLength(200)]
-        public string DocumentName { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Document Name is required")]
+        [StringLength(200, ErrorMessage = "Document Name must be less than 200 characters")]
+        public string DocumentName { get; set; } = "";
 
-        [Required]
-        [StringLength(100)]
-        public string Type { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Type is required")]
+        public string Type { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "Number of Copies is required")]
+        [Range(1, 100, ErrorMessage = "Number of Copies must be between 1 and 100")]
         public int NumberOfCopies { get; set; } = 1;
 
-        [Required]
-        public DateTime CreatedDate { get; set; } = DateTime.Now;
+        [Required(ErrorMessage = "Particulars/Reason is required")]
+        [StringLength(2000, MinimumLength = 10, ErrorMessage = "Particulars must be between 10 and 2000 characters")]
+        public string Particulars { get; set; } = "";
+
+        public DateTime CreatedDate { get; set; }
+        public bool IsDeleted { get; set; } = false;
 
         // Navigation properties
-        [ForeignKey("DocumentRequestId")]
-        public virtual DocumentRequest DocumentRequest { get; set; } = null!;
+        public DocumentRequest? DocumentRequest { get; set; }
     }
 }

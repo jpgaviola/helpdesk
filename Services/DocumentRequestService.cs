@@ -166,5 +166,28 @@ namespace HelpdeskBlazor.Services
             await _context.SaveChangesAsync();
             return documentItem;
         }
+
+        public async Task<DocumentRequest?> ChangeDocumentRequestStatusAsync(int documentRequestId, string newStatus)
+        {
+            try
+            {
+                var documentRequest = await _context.DocumentRequests
+                    .FirstOrDefaultAsync(d => d.Id == documentRequestId && !d.IsDeleted);
+
+                if (documentRequest == null)
+                    return null;
+
+                documentRequest.Status = newStatus;
+                documentRequest.ModifiedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+                return documentRequest;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error changing document request status: {ex.Message}", ex);
+            }
+        }
+
     }
 }

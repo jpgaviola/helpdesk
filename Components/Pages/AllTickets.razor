@@ -1149,6 +1149,63 @@
     color: #155724;
 }
 
+.document-items-list {
+    margin-top: 8px;
+}
+
+.document-item-display {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    font-size: 13px;
+}
+
+.document-item-display:last-child {
+    margin-bottom: 0;
+}
+
+.document-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.document-item-header strong {
+    color: #0A1A28;
+    font-weight: 600;
+}
+
+.document-item-id {
+    background: #e9ecef;
+    color: #6c757d;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.document-item-details {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: #666;
+}
+
+.document-item-details span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.document-item-details strong {
+    color: #0A1A28;
+    font-weight: 600;
+}
+
 </style>
 
 <div class="tickets-container">
@@ -1295,18 +1352,73 @@
                         <div class="detail-grid">
                             @if (request.Type == "Document")
                             {
-                                <div class="detail-section">
-                                    <div class="detail-label">Document Name</div>
-                                    <div class="detail-value">@request.DocumentName</div>
-                                </div>
-                                <div class="detail-section">
-                                    <div class="detail-label">Type</div>
-                                    <div class="detail-value">@request.DocumentType</div>
-                                </div>
-                                <div class="detail-section">
-                                    <div class="detail-label">Number of Copies</div>
-                                    <div class="detail-value">@request.NumberOfCopies</div>
-                                </div>
+                                @if (request.DocumentItems?.Count > 1)
+                                {
+                                    <!-- Multiple document items -->
+                                    <div class="detail-section description-section">
+                                        <div class="detail-label">Document Items (@request.DocumentItems.Count)</div>
+                                        <div class="detail-value">
+                                            <div class="document-items-list">
+                                                @foreach (var item in request.DocumentItems)
+                                                {
+                                                    <div class="document-item-display">
+                                                        <div class="document-item-header">
+                                                            <strong>@item.DocumentName</strong>
+                                                            <span class="document-item-id">#@item.Id</span>
+                                                        </div>
+                                                        <div class="document-item-details">
+                                                            <span><strong>Type:</strong> @item.Type</span>
+                                                            <span><strong>Copies:</strong> @item.NumberOfCopies</span>
+                                                        </div>
+                        
+                                                        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #e9ecef;">
+                                                            <div style="font-size: 11px; font-weight: 600; color: #666; text-transform: uppercase; margin-bottom: 4px;">
+                                                                Particulars/Reason:
+                                                            </div>
+                                                            <div style="font-size: 12px; color: #555; line-height: 1.4;">
+                                                                @(item.Particulars ?? "No specific reason provided")
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="detail-section">
+                                        <div class="detail-label">Total Copies</div>
+                                        <div class="detail-value">@request.NumberOfCopies</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <!-- Single document item -->
+                                    var singleItem = request.DocumentItems?.FirstOrDefault();
+                                    
+                                    <div class="detail-section">
+                                        <div class="detail-label">Document Name</div>
+                                        <div class="detail-value">@(singleItem?.DocumentName ?? request.DocumentName)</div>
+                                    </div>
+                                    <div class="detail-section">
+                                        <div class="detail-label">Document Type</div>
+                                        <div class="detail-value">@(singleItem?.Type ?? request.DocumentType)</div>
+                                    </div>
+                                    <div class="detail-section">
+                                        <div class="detail-label">Number of Copies</div>
+                                        <div class="detail-value">@(singleItem?.NumberOfCopies ?? request.NumberOfCopies)</div>
+                                    </div>
+                                    @if (singleItem != null)
+                                    {
+                                        <div class="detail-section">
+                                            <div class="detail-label">Document Item ID</div>
+                                            <div class="detail-value">#@singleItem.Id</div>
+                                        </div>
+                                    }
+                                    <!-- Show individual particulars for single document -->
+                                    <div class="detail-section description-section">
+                                        <div class="detail-label">Particulars/Reason</div>
+                                        <div class="detail-value">@(singleItem?.Particulars ?? request.Description)</div>
+                                    </div>
+                                }
                             }
                             
                             @if (request.Type == "Ticket")
@@ -1362,10 +1474,13 @@
                             }
                             
                             <!-- Description -->
-                            <div class="detail-section">
-                                <div class="detail-label">@(request.Type == "Document" ? "Particulars/Reason" : "Description")</div>
-                                <div class="detail-value">@request.Description</div>
-                            </div>
+                            @if (request.Type == "Ticket")
+                            {
+                                <div class="detail-section">
+                                    <div class="detail-label">Description</div>
+                                    <div class="detail-value">@request.Description</div>
+                                </div>
+                            }
                         </div>
 
                         <!-- Endorse To: -->
@@ -1515,15 +1630,28 @@ else
                             </div>
                         </button>
 
-                        <button class="status-change-option @(selectedStatus == "Rejected" ? "selected" : "")" 
-                                @onclick="@(() => SelectStatus("Rejected"))">
-                            <i class="fas fa-thumbs-down status-rejected"></i>
-                            <div>
-                                <strong>Rejected</strong>
-                                <small>Mark as rejected</small>
-                            </div>
-                        </button>
+                        <!-- Only show Rejected option for specific statuses -->
+                        @if (CanRejectTicket(selectedRequest))
+                        {
+                            <button class="status-change-option @(selectedStatus == "Rejected" ? "selected" : "")" 
+                                    @onclick="@(() => SelectStatus("Rejected"))">
+                                <i class="fas fa-thumbs-down status-rejected"></i>
+                                <div>
+                                    <strong>Rejected</strong>
+                                    <small>Mark as rejected</small>
+                                </div>
+                            </button>
+                        }
                     </div>
+                    
+                    <!-- Show information message if rejection is not allowed -->
+                    @if (!CanRejectTicket(selectedRequest))
+                    {
+                        <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; font-size: 13px; color: #856404;">
+                            <i class="fas fa-info-circle"></i>
+                            Tickets with status "Closed" or "Executed" cannot be rejected.
+                        </div>
+                    }
                 </div>
 
                 @if (selectedStatus == "Endorse")
@@ -1720,6 +1848,14 @@ else
     private Dictionary<int, List<TicketSignatory>> ticketSignatories = new Dictionary<int, List<TicketSignatory>>();
     private List<UnifiedRequestModel> allRequests = new List<UnifiedRequestModel>();
     private List<UnifiedRequestModel> filteredRequests = new List<UnifiedRequestModel>();
+
+    private bool CanRejectTicket(UnifiedRequestModel? request)
+    {
+        if (request == null) return false;
+        
+        var allowedStatusesForRejection = new[] { "Pending", "Acknowledge", "Endorse" };
+        return allowedStatusesForRejection.Contains(request.Status);
+    }
     
     private List<TicketSignatory> GetSignatoriesForTicket(int ticketId)
     {
@@ -1853,65 +1989,75 @@ else
     }
     
     private async Task ConfirmStatusChange()
+{
+    if (selectedRequest == null || string.IsNullOrEmpty(selectedStatus))
+        return;
+
+    if (selectedStatus == "Rejected" && !CanRejectTicket(selectedRequest))
     {
-        if (selectedRequest == null || string.IsNullOrEmpty(selectedStatus))
-            return;
+        await ShowToast("Invalid Operation", 
+            $"Cannot reject requests with status '{selectedRequest.Status}'. Only requests with status 'Pending', 'Acknowledge', or 'Endorse' can be rejected.", 
+            "error");
+        return;
+    }
 
-        if (selectedStatus == "Endorse" && !selectedUserId.HasValue)
+    if (selectedStatus == "Endorse" && !selectedUserId.HasValue)
+    {
+        await ShowToast("Validation Error", "Please select a Legal Counsel to endorse to.", "error");
+        return;
+    }
+
+    isStatusChanging = true;
+    StateHasChanged();
+
+    try
+    {
+        bool updated = false;
+        
+        if (selectedRequest.Type == "Ticket")
         {
-            await ShowToast("Validation Error", "Please select a Legal Counsel to endorse to.", "error");
-            return;
+            var updatedTicket = await TicketService.ChangeTicketStatusAsync(selectedRequest.Id, selectedStatus);
+            
+            if (selectedStatus == "Endorse" && selectedUserId.HasValue)
+            {
+                await TicketService.AssignTicketAsync(selectedRequest.Id, selectedUserId.Value);
+            }
+            
+            updated = updatedTicket != null;
+        }
+        else if (selectedRequest.Type == "Document")
+        {
+            var updatedDocument = await DocumentRequestService.ChangeDocumentRequestStatusAsync(selectedRequest.Id, selectedStatus);
+            
+            updated = updatedDocument != null;
         }
 
-        isStatusChanging = true;
-        StateHasChanged();
-
-        try
+        if (updated)
         {
-            bool updated = false;
-            if (selectedRequest.Type == "Ticket")
-            {
-                var updatedTicket = await TicketService.ChangeTicketStatusAsync(selectedRequest.Id, selectedStatus);
+            await LoadAllRequestsAsync();
+            CloseStatusModal();
+            
+            var endorseMessage = selectedStatus == "Endorse" && selectedUserId.HasValue 
+                ? $" and assigned to {availableUsers.FirstOrDefault(u => u.Id == selectedUserId.Value)?.Name}"
+                : "";
                 
-                if (selectedStatus == "Endorse" && selectedUserId.HasValue)
-                {
-                    await TicketService.AssignTicketAsync(selectedRequest.Id, selectedUserId.Value);
-                }
-                
-                updated = updatedTicket != null;
-            }
-            else
-            {
-                await ShowToast("Not Implemented", "Status change for document requests is not yet implemented.", "warning");
-                return;
-            }
-
-            if (updated)
-            {
-                await LoadAllRequestsAsync();
-                CloseStatusModal();
-                
-                var endorseMessage = selectedStatus == "Endorse" && selectedUserId.HasValue 
-                    ? $" and assigned to {availableUsers.FirstOrDefault(u => u.Id == selectedUserId.Value)?.Name}"
-                    : "";
-                    
-                await ShowToast("Status Changed", $"Status changed to '{selectedStatus}'{endorseMessage} successfully!", "success");
-            }
-            else
-            {
-                await ShowToast("Update Failed", "Failed to update status. Please try again.", "error");
-            }
+            await ShowToast("Status Changed", $"Status changed to '{selectedStatus}'{endorseMessage} successfully!", "success");
         }
-        catch (Exception ex)
+        else
         {
-            await ShowToast("Error", $"Error changing status: {ex.Message}", "error");
-        }
-        finally
-        {
-            isStatusChanging = false;
-            StateHasChanged();
+            await ShowToast("Update Failed", "Failed to update status. Please try again.", "error");
         }
     }
+    catch (Exception ex)
+    {
+        await ShowToast("Error", $"Error changing status: {ex.Message}", "error");
+    }
+    finally
+    {
+        isStatusChanging = false;
+        StateHasChanged();
+    }
+}
     protected override async Task OnInitializedAsync()
     {
         await LoadAllRequestsAsync();
@@ -1991,36 +2137,46 @@ else
         
         var ticketCount = unifiedList.Count(r => r.Type == "Ticket");
         var documentRequests = await DocumentRequestService.GetAllDocumentRequestsAsync();
-        
-        foreach (var docReq in documentRequests)
-        {
-            var subject = $"Document Request #{docReq.Id} - {docReq.Company}";
-            var firstDocItem = docReq.DocumentItems?.FirstOrDefault();
-            
-            unifiedList.Add(new UnifiedRequestModel
-            {
-                Id = docReq.Id,
-                Type = "Document",
-                Subject = subject,
-                RequesterName = docReq.RequesterName ?? "Unknown User",
-                RequesterEmail = docReq.RequesterEmail ?? "unknown@company.com",
-                Status = docReq.Status ?? "Pending",
-                Department = "Legal",
-                Category = "Document Request",
-                CreatedDate = docReq.CreatedDate,
-                Description = docReq.Particulars ?? "No particulars provided",
-                Company = docReq.Company ?? "Unknown Company",
-                DateNeeded = docReq.DateNeeded,
-                TimeNeeded = docReq.TimeNeeded,
-                DocumentName = firstDocItem?.DocumentName ?? "N/A",
-                DocumentType = firstDocItem?.Type ?? "N/A",
-                NumberOfCopies = firstDocItem?.NumberOfCopies ?? 0,
-                AssignedToUserId = null,
-                AssignedToUserName = null,
-                AssignedToUserEmail = null,
-                AssignedDate = null
-            });
-        }
+
+foreach (var docReq in documentRequests)
+{
+    // Create one unified request per document request (not per item)
+    var subject = $"Document Request #{docReq.Id} - {docReq.Company}";
+    
+    // Get all document items for this request
+    var documentItems = docReq.DocumentItems?.ToList() ?? new List<DocumentItem>();
+    
+    unifiedList.Add(new UnifiedRequestModel
+    {
+        Id = docReq.Id,
+        Type = "Document",
+        Subject = subject,
+        RequesterName = docReq.RequesterName ?? "Unknown User",
+        RequesterEmail = docReq.RequesterEmail ?? "unknown@company.com",
+        Status = docReq.Status ?? "Pending",
+        Department = "Legal",
+        Category = "Document Request",
+        CreatedDate = docReq.CreatedDate,
+        Description = docReq.Particulars ?? "No particulars provided",
+        Company = docReq.Company ?? "Unknown Company",
+        DateNeeded = docReq.DateNeeded,
+        TimeNeeded = docReq.TimeNeeded,
+        // For display purposes, show summary or first item
+        DocumentName = documentItems.Count > 1 
+            ? $"{documentItems.Count} Documents" 
+            : documentItems.FirstOrDefault()?.DocumentName ?? "N/A",
+        DocumentType = documentItems.Count > 1 
+            ? "Multiple Types" 
+            : documentItems.FirstOrDefault()?.Type ?? "N/A",
+        NumberOfCopies = documentItems.Sum(item => item.NumberOfCopies),
+        DocumentItemId = null, // Not needed anymore
+        DocumentItems = documentItems, // Add this new property to store all items
+        AssignedToUserId = null,
+        AssignedToUserName = null,
+        AssignedToUserEmail = null,
+        AssignedDate = null
+    });
+}
         
         var finalTicketCount = unifiedList.Count(r => r.Type == "Ticket");
         var finalDocumentCount = unifiedList.Count(r => r.Type == "Document");
@@ -2456,6 +2612,8 @@ public class AttachmentModel
         public string? DocumentName { get; set; }
         public string? DocumentType { get; set; }
         public int? NumberOfCopies { get; set; }
+        public int? DocumentItemId { get; set; }
+        public List<DocumentItem>? DocumentItems { get; set; }
         public int? AssignedToUserId { get; set; }
         public string? AssignedToUserName { get; set; }
         public string? AssignedToUserEmail { get; set; }
