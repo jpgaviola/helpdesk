@@ -73,6 +73,12 @@ namespace HelpdeskBlazor.Models
 
         public TimeOnly? TimeNeeded { get; set; }
 
+        [StringLength(100)]
+        public string? RequesterName { get; set; }
+
+        [StringLength(100)]
+        public string? RequesterEmail { get; set; }
+
         // Navigation properties
         [ForeignKey("AssignedToUserId")]
         public virtual User? AssignedToUser { get; set; }

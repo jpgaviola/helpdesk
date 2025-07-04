@@ -9,6 +9,7 @@
 @using System.IO
 @using HelpdeskBlazor.Services
 @inject IDocumentRequestService DocumentRequestService
+@inject HelpdeskBlazor.Services.ISessionService SessionService
 
 <style>
     .create-document-container {
@@ -896,6 +897,12 @@
 
     protected override void OnInitialized()
     {
+        if (!SessionService.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
         requestModel.DateNeeded = DateTime.Today.AddDays(1);
         requestModel.TimeNeeded = new TimeOnly(9, 0);
 
@@ -1048,6 +1055,13 @@
 
     private async Task SubmitRequest()
     {
+        if (!SessionService.IsAuthenticated)
+        {
+            await ShowToast("Authentication Error", "Please log in to create a document request.", "error");
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
         if (documents.Count == 0)
         {
             await ShowToast("Validation Error", "Please add at least one document to the request.", "error");
@@ -1066,7 +1080,6 @@
             return;
         }
 
-        // Validate each document
         for (int i = 0; i < documents.Count; i++)
         {
             var doc = documents[i];
@@ -1090,7 +1103,6 @@
         isSubmitting = true;
         try
         {
-            // Create the DocumentRequest entity
             var documentRequest = new DocumentRequest
             {
                 Company = requestModel.Company,
@@ -1098,18 +1110,18 @@
                 TimeNeeded = requestModel.TimeNeeded,
                 Particulars = requestModel.Particulars,
                 Status = "Pending",
-                CreatedBy = null,
+                CreatedBy = SessionService.CurrentUser?.Id,
+                RequesterName = SessionService.CurrentUser?.Name,
+                RequesterEmail = SessionService.CurrentUser?.Email,
                 ModifiedBy = null,
                 CreatedDate = DateTime.Now,
                 ModifiedDate = null,
                 IsDeleted = false
             };
 
-            // Save the document request first
             var savedRequest = await DocumentRequestService.CreateDocumentRequestAsync(documentRequest);
             lastCreatedRequestId = savedRequest.Id;
 
-            // Save each document item
             foreach (var doc in documents)
             {
                 var documentItem = new DocumentItem
@@ -1124,22 +1136,20 @@
                 await DocumentRequestService.AddDocumentItemAsync(documentItem);
             }
 
-            // Save general attachments WITH actual file saving
             foreach (var file in generalAttachments)
             {
                 try
                 {
-                    // Actually save the file to disk
                     var savedFilePath = await SaveFileAsync(file, savedRequest.Id);
 
                     var attachment = new DocumentRequestAttachment
                     {
                         DocumentRequestId = savedRequest.Id,
                         FileName = file.Name,
-                        FilePath = savedFilePath, // This now contains the actual saved file path
+                        FilePath = savedFilePath,
                         ContentType = file.ContentType,
                         FileSize = file.Size,
-                        UploadedBy = null,
+                        UploadedBy = SessionService.CurrentUser?.Id,
                         UploadedDate = DateTime.Now
                     };
 
@@ -1150,7 +1160,6 @@
                     await ShowToast("File Upload Warning",
                     $"Could not save file '{file.Name}': {ex.Message}",
                     "error");
-                    // Continue with other files even if one fails
                 }
             }
 
@@ -1274,19 +1283,15 @@
     {
         try
         {
-            // Create directory if it doesn't exist
             var uploadsPath = Path.Combine("wwwroot", "uploads", "documents", requestId.ToString());
             Directory.CreateDirectory(uploadsPath);
 
-            // Generate unique filename to avoid conflicts
             var fileName = $"{Guid.NewGuid()}_{file.Name}";
             var filePath = Path.Combine(uploadsPath, fileName);
 
-            // Save file to disk
             using var fileStream = new FileStream(filePath, FileMode.Create);
             await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(fileStream);
 
-            // Return the relative path for database storage
             return $"/uploads/documents/{requestId}/{fileName}";
         }
         catch (Exception ex)

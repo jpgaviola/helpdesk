@@ -9,15 +9,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add Entity Framework
+
 builder.Services.AddDbContext<HelpdeskDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+
 builder.Services.AddScoped<IUserService, UserService>();
-
 builder.Services.AddScoped<ITicketService, TicketService>();
-
 builder.Services.AddScoped<IDocumentRequestService, DocumentRequestService>();
+
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddSingleton<ISessionService, SessionService>();
+
+builder.Services.AddLogging(builder => builder.AddConsole());
 
 var app = builder.Build();
 
@@ -25,18 +30,16 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
 app.UseAntiforgery();
-
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// Auto-apply migrations and ensure database is created in development
+
 if (app.Environment.IsDevelopment())
 {
     using (var scope = app.Services.CreateScope())

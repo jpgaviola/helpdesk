@@ -1,4 +1,5 @@
 @inject NavigationManager Navigation
+@inject HelpdeskBlazor.Services.ISessionService SessionService
 
 <style>
     .sidebar {
@@ -266,7 +267,18 @@
 
     private async Task HandleLogout()
     {
-        Navigation.NavigateTo("/login", true);
+        try
+        {
+            SessionService.ClearSession();
+
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Logout error: {ex.Message}");
+
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
     }
 
     public void Dispose()

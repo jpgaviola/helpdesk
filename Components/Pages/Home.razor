@@ -1,9 +1,13 @@
 ﻿@page "/"
 @page "/login"
 @layout Components.Layout.SimpleLayout
+@rendermode InteractiveServer
 @using Microsoft.AspNetCore.Components.Forms
 @using System.ComponentModel.DataAnnotations
 @inject NavigationManager Navigation
+@using HelpdeskBlazor.Services
+@inject IAuthService AuthService
+@inject ISessionService SessionService
 
 <PageTitle>Helpdesk System - Login</PageTitle>
 
@@ -82,8 +86,10 @@
                         <input type="@(showPassword ? "text" : "password")" @bind="loginModel.Password"
                             class="form-control" id="password" placeholder="Enter your password" />
                         <i class="fas fa-lock input-icon"></i>
-                        <i class="fas @(showPassword ? "fa-eye-slash" : "fa-eye") password-toggle"
-                            @onclick="TogglePassword"></i>
+                        <button type="button" class="password-toggle-btn" @onclick="TogglePassword"
+                            style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; z-index: 999; color: #666; padding: 5px;">
+                            <i class="fas @(showPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                        </button>
                     </div>
                     <ValidationMessage For="@(() => loginModel.Password)" />
                 </div>
@@ -92,10 +98,17 @@
                     <a href="#" class="request-account">Request Account</a>
                 </div>
 
-                <a href="/tickets" class="login-btn"
-                    style="display: inline-block; text-decoration: none; text-align: center; color: white;">
-                    <span>Sign In</span>
-                </a>
+                <button type="submit" class="login-btn" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <div class="spinner"></div>
+                        <span>Signing In...</span>
+                    }
+                    else
+                    {
+                        <span>Sign In</span>
+                    }
+                </button>
             </EditForm>
         </div>
     </div>
@@ -107,6 +120,14 @@
     private bool showPassword = false;
     private string? errorMessage;
     private string? successMessage;
+
+    protected override void OnInitialized()
+    {
+        SessionService.ClearSession();
+
+        errorMessage = null;
+        successMessage = null;
+    }
 
     public class LoginModel
     {
@@ -122,29 +143,47 @@
 
     private void TogglePassword()
     {
-        showPassword = !showPassword;
+        try
+        {
+            var oldValue = showPassword;
+            showPassword = !showPassword;
+            StateHasChanged();
+        }
+        catch
+        {
+
+        }
     }
 
     private async Task HandleLogin()
     {
-
-
         try
         {
             isLoading = true;
-            errorMessage = "Button clicked! Method is working...";
+            errorMessage = null;
+            successMessage = null;
             StateHasChanged();
 
+            var user = await AuthService.AuthenticateAsync(loginModel.Username, loginModel.Password);
 
-            await Task.Delay(1000);
+            if (user != null)
+            {
+                SessionService.SetCurrentUser(user);
 
-            Navigation.NavigateTo("/dashboard");
+                successMessage = $"Welcome back, {user.Name}!";
+                StateHasChanged();
+                await Task.Delay(1000);
 
+                Navigation.NavigateTo("/tickets", true);
+            }
+            else
+            {
+                errorMessage = "Invalid username or password. Please try again.";
+            }
         }
         catch (Exception ex)
         {
-
-            errorMessage = $"Error: {ex.Message}";
+            errorMessage = $"An error occurred during login: {ex.Message}";
         }
         finally
         {

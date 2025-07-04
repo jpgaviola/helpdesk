@@ -1784,11 +1784,9 @@ else
         {
             isLoadingUsers = true;
             StateHasChanged();
-            
-            // Get all active users with Legal Counsel role
+
             availableUsers = await UserService.GetUsersByRoleAsync("legalcounsel");
             
-            // Filter to only active users
             availableUsers = availableUsers.Where(u => u.Status == "Active").ToList();
 
             if (!availableUsers.Any())
@@ -1859,7 +1857,6 @@ else
         if (selectedRequest == null || string.IsNullOrEmpty(selectedStatus))
             return;
 
-        // If Endorse is selected, validate that a user is selected
         if (selectedStatus == "Endorse" && !selectedUserId.HasValue)
         {
             await ShowToast("Validation Error", "Please select a Legal Counsel to endorse to.", "error");
@@ -1876,7 +1873,6 @@ else
             {
                 var updatedTicket = await TicketService.ChangeTicketStatusAsync(selectedRequest.Id, selectedStatus);
                 
-                // If endorsing, also assign the ticket to the selected user
                 if (selectedStatus == "Endorse" && selectedUserId.HasValue)
                 {
                     await TicketService.AssignTicketAsync(selectedRequest.Id, selectedUserId.Value);
@@ -1916,14 +1912,11 @@ else
             StateHasChanged();
         }
     }
-
-    // Initialization
     protected override async Task OnInitializedAsync()
     {
         await LoadAllRequestsAsync();
     }
 
-    // Data Loading
     private async Task LoadAllRequestsAsync()
 {
     try
@@ -1965,8 +1958,8 @@ else
                     Id = ticket.Id,
                     Type = "Ticket",
                     Subject = ticket.Subject ?? $"Legal Ticket #{ticket.Id}",
-                    RequesterName = "Legal Department",
-                    RequesterEmail = "legal@company.com",
+                    RequesterName = ticket.RequesterName ?? "Unknown User",
+                    RequesterEmail = ticket.RequesterEmail ?? "unknown@company.com", 
                     Status = ticket.Status ?? "Pending",
                     Department = ticket.Department ?? "Legal",
                     Category = ticket.Category ?? "Legal Request",
@@ -2009,8 +2002,8 @@ else
                 Id = docReq.Id,
                 Type = "Document",
                 Subject = subject,
-                RequesterName = "System User",
-                RequesterEmail = "system@company.com",
+                RequesterName = docReq.RequesterName ?? "Unknown User",
+                RequesterEmail = docReq.RequesterEmail ?? "unknown@company.com",
                 Status = docReq.Status ?? "Pending",
                 Department = "Legal",
                 Category = "Document Request",
@@ -2044,7 +2037,6 @@ else
     }
 }
 
-    // Filtering and Sorting
     private void OnSearchChanged(ChangeEventArgs e)
     {
         searchTerm = e.Value?.ToString() ?? "";
@@ -2062,7 +2054,6 @@ else
     {
         var query = allRequests.AsQueryable();
 
-        // Apply search filter
         if (!string.IsNullOrEmpty(searchTerm))
         {
             query = query.Where(r => r.Subject.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
@@ -2072,25 +2063,21 @@ else
                         (r.Company != null && r.Company.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)));
         }
 
-        // Apply type filter
         if (!string.IsNullOrEmpty(typeFilter))
         {
             query = query.Where(r => r.Type == typeFilter);
         }
 
-        // Apply status filter
         if (!string.IsNullOrEmpty(statusFilter))
         {
             query = query.Where(r => r.Status == statusFilter);
         }
 
-        // Apply priority filter
         if (!string.IsNullOrEmpty(priorityFilter))
         {
             query = query.Where(r => r.Priority == priorityFilter);
         }
 
-        // Apply sorting
         query = sortColumn switch
         {
             "Id" => sortDirection == "asc" ? query.OrderBy(r => r.Id) : query.OrderByDescending(r => r.Id),
@@ -2106,13 +2093,11 @@ else
         filteredRequests = query.ToList();
     }
 
-    // Legacy method for compatibility
     private void FilterAndSortTickets()
     {
         FilterAndSortRequests();
     }
 
-    // Pagination
     private List<UnifiedRequestModel> GetPaginatedRequests()
     {
         return filteredRequests
@@ -2147,7 +2132,6 @@ else
     private int GetRequestsByStatus(string status) => allRequests.Count(r => r.Status == status);
     private int GetRequestsByType(string type) => allRequests.Count(r => r.Type == type);
 
-    // UI Interactions
     private void ToggleRequestDetails(int requestId)
     {
         if (expandedTickets.Contains(requestId))
@@ -2221,8 +2205,6 @@ else
         StateHasChanged();
     }
 
-
-    // Actions
     private void ViewRequest(UnifiedRequestModel request)
     {
         CloseActionsMenu();
@@ -2310,7 +2292,6 @@ else
         }
     }
 
-    // Utility Methods
 private async Task OpenAttachmentsModal(UnifiedRequestModel request)
 {
     CloseActionsMenu();

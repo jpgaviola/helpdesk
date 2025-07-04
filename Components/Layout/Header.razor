@@ -1,4 +1,5 @@
 @inject NavigationManager Navigation
+@inject HelpdeskBlazor.Services.ISessionService SessionService
 
 <style>
     /* Header */
@@ -33,6 +34,11 @@
         border-radius: 8px;
         transition: background 0.3s ease;
         position: relative;
+        cursor: pointer;
+    }
+
+    .user-info:hover {
+        background: #f8f9fa;
     }
 
     .user-avatar {
@@ -45,6 +51,7 @@
         justify-content: center;
         color: white;
         font-weight: 600;
+        font-size: 14px;
     }
 
     .user-dropdown {
@@ -164,13 +171,49 @@
 
 <div class="header">
     <div class="header-right">
-        <div class="user-info">
-            <div class="user-avatar">L</div>
-            <div>
-                <div style="font-weight: 600; font-size: 14px;">User</div>
-                <div style="font-size: 12px; color: #666;">Legal Staff</div>
+        @if (SessionService.IsAuthenticated)
+        {
+            <div class="user-info @(showUserMenu ? "menu-open" : "")" @onclick="ToggleUserMenu">
+                <div class="user-avatar">@GetUserInitials()</div>
+                <div>
+                    <div style="font-weight: 600; font-size: 14px;">@GetCurrentUserName()</div>
+                    <div style="font-size: 12px; color: #666;">@GetCurrentUserRole()</div>
+                </div>
+                <i class="fas fa-chevron-down" style="margin-left: 8px; color: #666;"></i>
             </div>
-        </div>
+
+            <!-- User Dropdown Menu -->
+            <div class="user-dropdown @(showUserMenu ? "show" : "")">
+                <div class="dropdown-header">
+                    <div class="dropdown-user-name">@GetCurrentUserName()</div>
+                    <div class="dropdown-user-role">@GetCurrentUserRole()</div>
+                </div>
+                <div class="dropdown-menu">
+                    <button class="dropdown-item" @onclick="ViewProfile">
+                        <i class="fas fa-user"></i>
+                        <span>View Profile</span>
+                    </button>
+                    <button class="dropdown-item" @onclick="AccountSettings">
+                        <i class="fas fa-cog"></i>
+                        <span>Account Settings</span>
+                    </button>
+                    <button class="dropdown-item logout" @onclick="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="user-info">
+                <div class="user-avatar">?</div>
+                <div>
+                    <div style="font-weight: 600; font-size: 14px;">Not Logged In</div>
+                    <div style="font-size: 12px; color: #666;">Please login</div>
+                </div>
+            </div>
+        }
     </div>
 </div>
 
@@ -178,6 +221,16 @@
 
 @code {
     private bool showUserMenu = false;
+
+    protected override void OnInitialized()
+    {
+        SessionService.OnUserChanged += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        SessionService.OnUserChanged -= StateHasChanged;
+    }
 
     private void ToggleUserMenu()
     {
@@ -188,6 +241,7 @@
     private void CloseUserMenu()
     {
         showUserMenu = false;
+        StateHasChanged();
     }
 
     private void ViewProfile()
@@ -205,6 +259,41 @@
     private void Logout()
     {
         showUserMenu = false;
-        Navigation.NavigateTo("/login");
+        SessionService.ClearSession();
+        Navigation.NavigateTo("/login", true);
+    }
+
+    private string GetCurrentUserName()
+    {
+        return SessionService.CurrentUser?.Name ?? "Unknown User";
+    }
+
+    private string GetCurrentUserRole()
+    {
+        if (SessionService.CurrentUser?.Role == null)
+            return "Unknown Role";
+
+        return SessionService.CurrentUser.Role.ToLower() switch
+        {
+            "legalstaff" => "Legal Staff",
+            "legalcounsel" => "Legal Counsel",
+            "requester" => "Requester",
+            "admin" => "Administrator",
+            "manager" => "Manager",
+            _ => SessionService.CurrentUser.Role
+        };
+    }
+
+    private string GetUserInitials()
+    {
+        if (SessionService.CurrentUser?.Name == null)
+            return "?";
+
+        var parts = SessionService.CurrentUser.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+        {
+            return $"{parts[0][0]}{parts[1][0]}".ToUpper();
+        }
+        return parts.Length > 0 ? parts[0][0].ToString().ToUpper() : "?";
     }
 }

@@ -40,6 +40,12 @@ namespace HelpdeskBlazor.Models
         [Required]
         public bool IsDeleted { get; set; } = false;
 
+        [StringLength(100)]
+        public string? RequesterName { get; set; }
+
+        [StringLength(100)]
+        public string? RequesterEmail { get; set; }
+
         // Navigation properties
         [ForeignKey("CreatedBy")]
         public virtual User? CreatedByUser { get; set; }

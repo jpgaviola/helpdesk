@@ -123,8 +123,47 @@ namespace HelpdeskBlazor.Data
                         entity.Property(e => e.ResolvedDate).HasColumnType("datetime2");
                         entity.Property(e => e.ClosedDate).HasColumnType("datetime2");
 
+                        entity.Property(e => e.RequesterName)
+                        .HasMaxLength(100)
+                        .IsRequired(false);
+
+                        entity.Property(e => e.RequesterEmail)
+                        .HasMaxLength(100)
+                        .IsRequired(false);
+
                         entity.HasIndex(e => e.Status);
                         entity.HasIndex(e => e.Priority);
+                        entity.HasIndex(e => e.CreatedDate);
+                  });
+
+                  // Configure DocumentRequest entity
+                  modelBuilder.Entity<DocumentRequest>(entity =>
+                  {
+                        entity.HasKey(e => e.Id);
+
+                        entity.HasOne(e => e.CreatedByUser)
+                        .WithMany()
+                        .HasForeignKey(e => e.CreatedBy)
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                        entity.HasOne(e => e.ModifiedByUser)
+                        .WithMany()
+                        .HasForeignKey(e => e.ModifiedBy)
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                        entity.Property(e => e.CreatedDate).HasColumnType("datetime2");
+                        entity.Property(e => e.ModifiedDate).HasColumnType("datetime2");
+                        entity.Property(e => e.DateNeeded).HasColumnType("datetime2");
+
+                        entity.Property(e => e.RequesterName)
+                        .HasMaxLength(100)
+                        .IsRequired(false);
+
+                        entity.Property(e => e.RequesterEmail)
+                        .HasMaxLength(100)
+                        .IsRequired(false);
+
+                        entity.HasIndex(e => e.Status);
                         entity.HasIndex(e => e.CreatedDate);
                   });
 
