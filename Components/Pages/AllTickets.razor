@@ -2588,7 +2588,6 @@ else
         }
     }
 
-    // Statistics
     private int GetTotalRequests() => allRequests.Count;
     private int GetRequestsByStatus(string status) => allRequests.Count(r => r.Status == status);
     private int GetRequestsByType(string type) => allRequests.Count(r => r.Type == type);
