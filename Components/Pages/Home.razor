@@ -67,23 +67,6 @@
                 }
             </div>
 
-            <!-- Error/Success Messages -->
-            @if (!string.IsNullOrEmpty(errorMessage))
-            {
-                <div class="error-message show">
-                    <i class="fas fa-exclamation-circle"></i>
-                    @errorMessage
-                </div>
-            }
-
-            @if (!string.IsNullOrEmpty(successMessage))
-            {
-                <div class="success-message show">
-                    <i class="fas fa-check-circle"></i>
-                    @successMessage
-                </div>
-            }
-
             <EditForm Model="loginModel" OnValidSubmit="HandleLogin" FormName="LoginForm" class="login-form">
                 <DataAnnotationsValidator />
 
@@ -138,21 +121,94 @@
             </EditForm>
         </div>
     </div>
+    <!-- Toast Container -->
+    <div class="toast-container">
+        @foreach (var toast in toasts)
+        {
+            <div class="toast @toast.Type @(toast.IsVisible ? "show" : "")">
+                <div class="toast-icon">
+                    @if (toast.Type == "success")
+                    {
+                        <i class="fas fa-check"></i>
+                    }
+                    else if (toast.Type == "error")
+                    {
+                        <i class="fas fa-times"></i>
+                    }
+                    else if (toast.Type == "info")
+                    {
+                        <i class="fas fa-info"></i>
+                    }
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">@toast.Title</div>
+                    <div class="toast-message">@toast.Message</div>
+                </div>
+                <button class="toast-close" @onclick="() => RemoveToast(toast.Id)">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        }
+    </div>
 </div>
 
 @code {
     private LoginModel loginModel = new();
     private bool isLoading = false;
     private bool showPassword = false;
-    private string? errorMessage;
-    private string? successMessage;
+    private List<ToastNotification> toasts = new List<ToastNotification>();
+    private int toastIdCounter = 0;
+
+    private async Task ShowToast(string title, string message, string type = "success")
+    {
+        var toast = new ToastNotification
+        {
+            Id = ++toastIdCounter,
+            Title = title,
+            Message = message,
+            Type = type,
+            IsVisible = false
+        };
+
+        toasts.Add(toast);
+        StateHasChanged();
+
+        await Task.Delay(100);
+        toast.IsVisible = true;
+        StateHasChanged();
+
+        _ = Task.Delay(4000).ContinueWith(async _ =>
+        {
+            await InvokeAsync(() =>
+    {
+            RemoveToast(toast.Id);
+        });
+        });
+    }
+
+    private void RemoveToast(int toastId)
+    {
+        var toast = toasts.FirstOrDefault(t => t.Id == toastId);
+        if (toast != null)
+        {
+            toast.IsVisible = false;
+            StateHasChanged();
+
+            Task.Delay(300).ContinueWith(_ =>
+            {
+                InvokeAsync(() =>
+    {
+                toasts.Remove(toast);
+                StateHasChanged();
+            });
+            });
+        }
+    }
 
     protected override void OnInitialized()
     {
         SessionService.ClearSession();
 
-        errorMessage = null;
-        successMessage = null;
     }
 
     private void TogglePassword()
@@ -170,47 +226,45 @@
     }
 
     private async Task HandleLogin()
+{
+    try
     {
-        try
+        isLoading = true;
+        StateHasChanged();
+
+        var user = await AuthService.AuthenticateAsync(loginModel.Username, loginModel.Password, loginModel.Domain);
+
+        if (user != null)
         {
-            isLoading = true;
-            errorMessage = null;
-            successMessage = null;
+            SessionService.SetCurrentUser(user);
+            await ShowToast("Login Successful!", $"Welcome back, {user.Name}! Logged in to {user.Domain} domain.", "success");
             StateHasChanged();
-
-            var user = await AuthService.AuthenticateAsync(loginModel.Username, loginModel.Password, loginModel.Domain);
-
-            if (user != null)
+            await Task.Delay(1500);
+            Navigation.NavigateTo("/tickets", true);
+        }
+        else
+        {
+            var userExists = await AuthService.GetUserByEmailAsync(loginModel.Username);
+            if (userExists != null && userExists.Domain != loginModel.Domain)
             {
-                SessionService.SetCurrentUser(user);
-                successMessage = $"Welcome back, {user.Name}! Logged in to {user.Domain} domain.";
-                StateHasChanged();
-                await Task.Delay(1000);
-                Navigation.NavigateTo("/tickets", true);
+                await ShowToast("Domain Mismatch", $"User exists but belongs to '{userExists.Domain}' domain. Please select the correct domain.", "error");
             }
             else
             {
-                var userExists = await AuthService.GetUserByEmailAsync(loginModel.Username);
-                if (userExists != null && userExists.Domain != loginModel.Domain)
-                {
-                    errorMessage = $"User exists but belongs to '{userExists.Domain}' domain. Please select the correct domain.";
-                }
-                else
-                {
-                    errorMessage = "Invalid credentials. Please check your domain, username, and password.";
-                }
+                await ShowToast("Login Failed", "Invalid credentials. Please check your domain, username, and password.", "error");
             }
         }
-        catch (Exception ex)
-        {
-            errorMessage = $"An error occurred during login: {ex.Message}";
-        }
-        finally
-        {
-            isLoading = false;
-            StateHasChanged();
-        }
     }
+    catch (Exception ex)
+    {
+        await ShowToast("Login Error", $"An error occurred during login: {ex.Message}", "error");
+    }
+    finally
+    {
+        isLoading = false;
+        StateHasChanged();
+    }
+}
 
     public class LoginModel
     {
@@ -225,6 +279,15 @@
         public string Password { get; set; } = "";
 
         public bool RememberMe { get; set; }
+    }
+
+    public class ToastNotification
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Message { get; set; } = "";
+        public string Type { get; set; } = "success";
+        public bool IsVisible { get; set; } = false;
     }
 
 }
