@@ -192,8 +192,10 @@
     <!-- Header section with logo and title -->
     <div class="sidebar-header">
         <div class="sidebar-logo">
-            <img src="semirara.png" alt="Semirara Mining" />
+            <img src="@GetLogoPath()" alt="@GetCompanyName()" />
         </div>
+
+
         <h2 class="sidebar-title">
             <i class="fas fa-headset"></i>
             Helpdesk System
@@ -255,6 +257,44 @@
 
 @code {
     private string currentPath = "";
+
+    private string GetLogoPath()
+    {
+        if (SessionService.IsAuthenticated && SessionService.CurrentUser != null)
+        {
+            var userDomain = SessionService.CurrentUser.Domain?.ToUpper();
+
+            return userDomain switch
+            {
+                "SCPC" => "scpc.png",
+                "SLPGC" => "slpgc.png",
+                "SMPC" => "semirara.png",
+                _ => "semirara.png"
+            };
+        }
+
+        return "semirara.png";
+    }
+
+    private string GetCompanyName()
+    {
+        if (SessionService.IsAuthenticated && SessionService.CurrentUser != null)
+        {
+            var userDomain = SessionService.CurrentUser.Domain?.ToUpper();
+
+            return userDomain switch
+            {
+                "SCPC" => "SCPC",
+                "SLPGC" => "SLPGC",
+                "SMPC" => "Semirara Mining",
+                _ => "Semirara Mining"
+            };
+        }
+
+        return "Semirara Mining";
+    }
+
+
 
     protected override void OnInitialized()
     {
