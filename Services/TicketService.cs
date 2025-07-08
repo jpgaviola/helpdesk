@@ -31,7 +31,9 @@ namespace HelpdeskBlazor.Services
 
         public async Task<List<TicketReportItem>> GenerateTicketReportAsync(DateTime startDate, DateTime endDate, string? majorConcern = null)
         {
-            var query = _context.Tickets
+            var reportItems = new List<TicketReportItem>();
+
+            var ticketsQuery = _context.Tickets
                 .Include(t => t.AssignedToUser)
                 .Where(t => !t.IsDeleted &&
                            t.CreatedDate >= startDate &&
@@ -39,27 +41,125 @@ namespace HelpdeskBlazor.Services
 
             if (!string.IsNullOrEmpty(majorConcern))
             {
-                query = query.Where(t => t.Category == majorConcern);
+                ticketsQuery = ticketsQuery.Where(t => t.Category == majorConcern);
             }
 
-            var tickets = await query.OrderBy(t => t.CreatedDate).ToListAsync();
+            var tickets = await ticketsQuery.OrderBy(t => t.CreatedDate).ToListAsync();
 
-            return tickets.Select(t => new TicketReportItem
+            foreach (var ticket in tickets)
             {
-                RequestNo = $"2025-{t.Id:D5}",
-                AppRefNo = t.AppReferenceNo ?? "N/A",
-                RequestedDate = t.CreatedDate,
-                RequestedBy = t.RequesterName ?? "Unknown",
-                EndorsedTo = t.AssignedToUser?.Name ?? "N/A",
-                TicketNo = $"2025-{t.Id:D5}",
-                RequestType = "LEGAL",
-                StartDateTime = t.CreatedDate,
-                EndDateTime = t.ModifiedDate,
-                ResponseDays = t.ModifiedDate.HasValue ?
-                    (int)(t.ModifiedDate.Value - t.CreatedDate).TotalDays : 0,
-                Concern = t.Description ?? "No description",
-                MajorConcern = t.Category ?? "General"
-            }).ToList();
+                reportItems.Add(new TicketReportItem
+                {
+                    RequestNo = $"2025-{ticket.Id:D5}",
+                    AppRefNo = ticket.AppReferenceNo ?? "N/A",
+                    RequestedDate = ticket.CreatedDate,
+                    RequestedBy = ticket.RequesterName ?? "Unknown",
+                    EndorsedTo = ticket.AssignedToUser?.Name ?? "N/A",
+                    TicketNo = $"2025-{ticket.Id:D5}",
+                    RequestType = "LEGAL",
+                    StartDateTime = ticket.CreatedDate,
+                    EndDateTime = ticket.ModifiedDate,
+                    ResponseDays = ticket.ModifiedDate.HasValue ?
+                        (int)(ticket.ModifiedDate.Value - ticket.CreatedDate).TotalDays : 0,
+                    Concern = ticket.Description ?? "No description",
+                    MajorConcern = ticket.Category ?? "General"
+                });
+            }
+
+            var documentsQuery = _context.DocumentRequests
+                .Include(d => d.DocumentItems)
+                .Where(d => !d.IsDeleted &&
+                           d.CreatedDate >= startDate &&
+                           d.CreatedDate <= endDate);
+
+            var documents = await documentsQuery.OrderBy(d => d.CreatedDate).ToListAsync();
+
+            foreach (var doc in documents)
+            {
+                string majorConcernForDoc = DetermineMajorConcernFromDocumentRequest(doc);
+
+                if (!string.IsNullOrEmpty(majorConcern))
+                {
+                    if (!string.Equals(majorConcernForDoc, majorConcern, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+                }
+
+                reportItems.Add(new TicketReportItem
+                {
+                    RequestNo = $"2025-{doc.Id:D5}",
+                    AppRefNo = "N/A",
+                    RequestedDate = doc.CreatedDate,
+                    RequestedBy = doc.RequesterName ?? "Unknown",
+                    EndorsedTo = "N/A",
+                    TicketNo = $"2025-{doc.Id:D5}",
+                    RequestType = "DOCUMENT",
+                    StartDateTime = doc.CreatedDate,
+                    EndDateTime = doc.ModifiedDate,
+                    ResponseDays = doc.ModifiedDate.HasValue ?
+                        (int)(doc.ModifiedDate.Value - doc.CreatedDate).TotalDays : 0,
+                    Concern = doc.Particulars ?? "Document request",
+                    MajorConcern = majorConcernForDoc
+                });
+            }
+
+            return reportItems.OrderBy(r => r.RequestedDate).ToList();
+        }
+
+        private string DetermineMajorConcernFromDocumentRequest(DocumentRequest docRequest)
+        {
+            var documentTypes = docRequest.DocumentItems?.Select(item => item.Type?.ToLower() ?? "").ToList() ?? new List<string>();
+            var documentNames = docRequest.DocumentItems?.Select(item => item.DocumentName?.ToLower() ?? "").ToList() ?? new List<string>();
+
+            var allDocumentText = documentTypes.Concat(documentNames).ToList();
+
+            if (allDocumentText.Any(text =>
+                text.Contains("secretary") && text.Contains("certificate")))
+            {
+                return "SECRETARY'S CERTIFICATE";
+            }
+
+            if (allDocumentText.Any(text =>
+                text.Contains("contract") ||
+                text.Contains("agreement") ||
+                text.Contains("moa") ||
+                text.Contains("memorandum of agreement") ||
+                text.Contains("service agreement") ||
+                text.Contains("employment contract")))
+            {
+                return "CONTRACT REVIEW/PREPARATION";
+            }
+
+            if (allDocumentText.Any(text =>
+                text.Contains("legal opinion") ||
+                text.Contains("research") ||
+                text.Contains("analysis") ||
+                text.Contains("opinion letter")))
+            {
+                return "LEGAL RESEARCH & OPINION";
+            }
+
+            if (allDocumentText.Any(text =>
+                text.Contains("corporate") ||
+                text.Contains("certificate") ||
+                text.Contains("articles") ||
+                text.Contains("board resolution") ||
+                text.Contains("incorporation") ||
+                text.Contains("bylaws") ||
+                text.Contains("stockholder") ||
+                text.Contains("shareholder") ||
+                text.Contains("corporate secretary") ||
+                text.Contains("board") ||
+                text.Contains("resolution") ||
+                text.Contains("minutes") ||
+                text.Contains("director") ||
+                text.Contains("good standing")))
+            {
+                return "CORPORATE DOCUMENTS";
+            }
+
+            return "CORPORATE DOCUMENTS";
         }
 
         public async Task<Ticket?> GetTicketByIdAsync(int id)
@@ -70,7 +170,7 @@ namespace HelpdeskBlazor.Services
                 .Include(t => t.Attachments)
                 .Include(t => t.Comments)
                     .ThenInclude(c => c.CreatedByUser)
-                .Include(t => t.Signatories) // Add this line
+                .Include(t => t.Signatories)
                 .Where(t => t.Id == id && !t.IsDeleted)
                 .FirstOrDefaultAsync();
         }
