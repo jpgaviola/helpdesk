@@ -1240,6 +1240,12 @@
             <option value="Reject">Reject</option>
         </select>
     </div>
+        <div class="toolbar-right">
+        <button class="create-ticket-btn" @onclick="OpenReportModal">
+            <i class="fas fa-chart-bar"></i>
+            Generate Report
+        </button>
+    </div>
 </div>
 
 
@@ -1719,6 +1725,103 @@ else
     </div>
 </div>
 
+                        <!-- Generate Report Modal -->
+                        <div class="modal-overlay @(showReportModal ? "show" : "")" @onclick="CloseReportModal">
+                            <div class="modal-content" @onclick:stopPropagation="true" style="max-width: 900px;">
+                                <div class="modal-header">
+                                    <h3 class="modal-title">
+                                        <i class="fas fa-chart-bar"></i>
+                                        Generate Ticket Report
+                                    </h3>
+                                    <button class="modal-close" @onclick="CloseReportModal">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="modal-body">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label required">Start Date</label>
+                                            <input type="date" class="form-input" @bind="reportStartDate" @bind:format="yyyy-MM-dd" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label required">End Date</label>
+                                            <input type="date" class="form-input" @bind="reportEndDate" @bind:format="yyyy-MM-dd" />
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label class="form-label">Major Concern (Optional)</label>
+                                        <select class="form-select" @bind="selectedMajorConcern">
+                                            <option value="">All Major Concerns</option>
+                                            @foreach (var concern in majorConcerns)
+                                            {
+                                                <option value="@concern">@concern</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    
+                                    @if (reportData.Any())
+                                    {
+                                        <div class="form-group">
+                                            <label class="form-label">Report Preview</label>
+                                            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 15px; max-height: 300px; overflow-y: auto;">
+                                                <div style="font-family: monospace; font-size: 12px; white-space: pre-line;">
+                            @{
+                                var preview = GenerateReportText();
+                                var previewLines = preview.Split('\n').Take(20).ToList();
+                                if (preview.Split('\n').Length > 20)
+                                {
+                                    previewLines.Add("... (truncated for preview)");
+                                }
+                            }
+                            @string.Join("\n", previewLines)
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        Showing preview of first 20 lines. Full report will be exported.
+                    </small>
+                </div>
+                
+                <div style="background: #e8f5e8; border: 1px solid #c3e6c3; border-radius: 6px; padding: 12px; margin-top: 15px;">
+                    <div style="display: flex; align-items: center; gap: 8px; color: #155724;">
+                        <i class="fas fa-check-circle"></i>
+                        <strong>Report Ready:</strong> @reportData.Count tickets found
+                    </div>
+                </div>
+            }
+        </div>
+        
+        <div class="modal-footer">
+    <button class="btn btn-secondary" @onclick="CloseReportModal" disabled="@isGeneratingReport">
+        Cancel
+    </button>
+    
+    @if (reportData.Any())
+    {
+        <button class="btn btn-primary" @onclick="PrintReportToPdf">
+            <i class="fas fa-print"></i>
+            Print PDF
+        </button>
+        <button class="btn btn-primary" @onclick="ExportReportToPdf">
+            <i class="fas fa-file-pdf"></i>
+            Export PDF
+        </button>
+    }
+    
+    <button class="btn btn-primary" @onclick="GenerateReport" disabled="@isGeneratingReport">
+        @if (isGeneratingReport)
+        {
+            <div class="loading-spinner"></div>
+        }
+        <i class="fas fa-chart-bar"></i>
+        @(reportData.Any() ? "Regenerate" : "Generate") Report
+    </button>
+</div>
+    </div>
+</div>
+
 <!-- Attachments Modal -->
 <div class="modal-overlay @(showAttachmentsModal ? "show" : "")" @onclick="CloseAttachmentsModal">
     <div class="modal-content" @onclick:stopPropagation="true">
@@ -1845,6 +1948,164 @@ else
     private bool isStatusChanging = false;
 
     private int activeStatusSubmenu = 0;
+    private bool showReportModal = false;
+    private DateTime reportStartDate = DateTime.Today.AddDays(-30);
+    private DateTime reportEndDate = DateTime.Today;
+    private string selectedMajorConcern = "";
+    private List<TicketReportItem> reportData = new List<TicketReportItem>();
+    private bool isGeneratingReport = false;
+
+    private List<string> majorConcerns = new List<string>
+    {
+        "CONTRACT REVIEW/PREPARATION",
+        "LEGAL RESEARCH & OPINION",
+        "SECRETARY'S CERTIFICATE",
+        "CORPORATE DOCUMENTS"
+    };
+
+    private void OpenReportModal()
+    {
+        showReportModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseReportModal()
+    {
+        showReportModal = false;
+        reportData.Clear();
+        StateHasChanged();
+    }
+
+    private async Task GenerateReport()
+    {
+        isGeneratingReport = true;
+        StateHasChanged();
+
+        try
+        {
+            reportData = await TicketService.GenerateTicketReportAsync(
+                reportStartDate, 
+                reportEndDate, 
+                string.IsNullOrEmpty(selectedMajorConcern) ? null : selectedMajorConcern);
+            
+            await ShowToast("Report Generated", 
+                $"Generated report with {reportData.Count} tickets", "success");
+        }
+        catch (Exception ex)
+        {
+            await ShowToast("Error", $"Error generating report: {ex.Message}", "error");
+        }
+        finally
+        {
+            isGeneratingReport = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GenerateReportText()
+    {
+        var sb = new System.Text.StringBuilder();
+        
+        sb.AppendLine($"PRINT DATE/TIME : {DateTime.Now:MM/dd/yyyy HH:mm:ss} PRINTED BY : SYSTEM");
+        sb.AppendLine("PAGE : 1");
+        sb.AppendLine("WEB HELPDESK SYSTEM");
+        sb.AppendLine("TICKET PER MAJOR CONCERN REPORT");
+        sb.AppendLine(new string('=', 175));
+        sb.AppendLine("REQUEST NO".PadRight(12) + "APP REF NO".PadRight(12) + "REQUESTED DATE".PadRight(15) + 
+                    "REQUESTED BY".PadRight(25) + "ENDORSED TO".PadRight(25) + "TICKET NO".PadRight(12) + 
+                    "REQUEST TYPE".PadRight(15) + "START DATE/TIME".PadRight(20) + "END DATE/TIME".PadRight(20) + 
+                    "RESPONSE DAYS/TIME");
+        sb.AppendLine(new string('=', 175));
+        sb.AppendLine($"{reportStartDate:MM/dd/yyyy} - {reportEndDate:MM/dd/yyyy}");
+
+        var groupedByMajorConcern = reportData.GroupBy(r => r.MajorConcern);
+
+        foreach (var group in groupedByMajorConcern.OrderBy(g => g.Key))
+        {
+            sb.AppendLine($"MAJOR CONCERN: {group.Key.ToUpper()}");
+            sb.AppendLine($"Total Tickets Served: {group.Count()}");
+            
+            foreach (var item in group.OrderBy(r => r.RequestedDate))
+            {
+                sb.AppendLine($"{item.RequestNo.PadRight(12)}" +
+                            $"{item.AppRefNo.PadRight(12)}" +
+                            $"{item.RequestedDate:MM/dd/yyyy}".PadRight(15) +
+                            $"{TruncateString(item.RequestedBy, 23).PadRight(25)}" +
+                            $"{TruncateString(item.EndorsedTo, 23).PadRight(25)}" +
+                            $"{item.TicketNo.PadRight(12)}" +
+                            $"{item.RequestType.PadRight(15)}" +
+                            $"{(item.StartDateTime?.ToString("MM/dd/yyyy HH:mm:ss") ?? "N/A").PadRight(20)}" +
+                            $"{(item.EndDateTime?.ToString("MM/dd/yyyy HH:mm:ss") ?? "N/A").PadRight(20)}" +
+                            $"{item.ResponseDays}");
+                
+                sb.AppendLine($"CONCERN: {TruncateString(item.Concern, 150)}");
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private async Task PrintReportToPdf()
+    {
+        if (!reportData.Any())
+        {
+            await ShowToast("No Data", "Please generate report first", "warning");
+            return;
+        }
+
+        var reportJson = GenerateReportJson();
+        var fileName = $"Ticket_Report_{reportStartDate:MMdd}_{reportEndDate:MMdd}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+        
+        await JSRuntime.InvokeVoidAsync("printToPdf", fileName, reportJson);
+        await ShowToast("Print Dialog Opened", "Enhanced print window opened. Use browser's print dialog to save as PDF.", "success");
+    }
+
+    private async Task ExportReportToPdf()
+    {
+        if (!reportData.Any())
+        {
+            await ShowToast("No Data", "Please generate report first", "warning");
+            return;
+        }
+
+        var reportJson = GenerateReportJson();
+        var fileName = $"Ticket_Report_{reportStartDate:MMdd}_{reportEndDate:MMdd}_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+        
+        await JSRuntime.InvokeVoidAsync("exportToPdf", fileName, reportJson);
+        await ShowToast("PDF Generated", "Real PDF file has been created and downloaded!", "success");
+    }
+
+    private string GenerateReportJson()
+    {
+        var reportObject = new
+        {
+            startDate = reportStartDate.ToString("yyyy-MM-dd"),
+            endDate = reportEndDate.ToString("yyyy-MM-dd"),
+            tickets = reportData.Select(item => new
+            {
+                requestNo = item.RequestNo,
+                appRefNo = item.AppRefNo,
+                requestedDate = item.RequestedDate.ToString("yyyy-MM-dd"),
+                requestedBy = item.RequestedBy,
+                endorsedTo = item.EndorsedTo,
+                ticketNo = item.TicketNo,
+                requestType = item.RequestType,
+                startDateTime = item.StartDateTime?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                endDateTime = item.EndDateTime?.ToString("yyyy-MM-ddTHH:mm:ss"),
+                responseDays = item.ResponseDays,
+                concern = item.Concern,
+                majorConcern = item.MajorConcern
+            }).ToList()
+        };
+
+        return System.Text.Json.JsonSerializer.Serialize(reportObject);
+    }
+
+    private string TruncateString(string input, int maxLength)
+    {
+        if (string.IsNullOrEmpty(input)) return "";
+        return input.Length <= maxLength ? input : input.Substring(0, maxLength) + "...";
+    }
     private Dictionary<int, List<TicketSignatory>> ticketSignatories = new Dictionary<int, List<TicketSignatory>>();
     private List<UnifiedRequestModel> allRequests = new List<UnifiedRequestModel>();
     private List<UnifiedRequestModel> filteredRequests = new List<UnifiedRequestModel>();

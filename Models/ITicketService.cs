@@ -22,5 +22,6 @@ namespace HelpdeskBlazor.Services
         Task<List<TicketAttachment>> GetTicketAttachmentsAsync(int ticketId);
         Task<byte[]> DownloadAttachmentAsync(int attachmentId);
         Task<TicketAttachment?> GetTicketAttachmentByIdAsync(int attachmentId);
+        Task<List<TicketReportItem>> GenerateTicketReportAsync(DateTime startDate, DateTime endDate, string? majorConcern = null);
     }
 }

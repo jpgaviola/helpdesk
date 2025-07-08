@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("HelpdeskBlazor")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e86311be28de5f022e33d34667014d09f4488d05")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5030f4dec5b7e796d4da5ccec30b0769a4bab9fe")]
 [assembly: System.Reflection.AssemblyProductAttribute("HelpdeskBlazor")]
 [assembly: System.Reflection.AssemblyTitleAttribute("HelpdeskBlazor")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

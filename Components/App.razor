@@ -20,6 +20,9 @@
     <Routes />
     <script src="_framework/blazor.web.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Add jsPDF library for real PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <script>
         window.chartFunctions = {
             initializeLineChart: (canvasId, data) => {
@@ -104,8 +107,9 @@
             }
         };
     </script>
+
     <script>
-        window.downloadFile = (filename, base64Data, contentType) => {
+        window.downloadFile = function (filename, base64Data, contentType) {
             try {
                 const byteCharacters = atob(base64Data);
                 const byteNumbers = new Array(byteCharacters.length);
@@ -127,6 +131,421 @@
                 alert('Failed to download file: ' + error.message);
             }
         };
+
+        window.printToPdf = function (filename, reportDataJson) {
+            try {
+                const reportData = JSON.parse(reportDataJson);
+                const htmlContent = generateEnhancedPrintHTML(reportData);
+                const printWindow = window.open('', '_blank', 'width=1200,height=800');
+                printWindow.document.write(htmlContent);
+                printWindow.document.close();
+                printWindow.onload = function () {
+                    setTimeout(function () {
+                        printWindow.print();
+                    }, 1000);
+                };
+            } catch (error) {
+                console.error('Print failed:', error);
+                alert('Failed to open print dialog: ' + error.message);
+            }
+        };
+
+        window.exportToPdf = function (filename, reportDataJson) {
+            try {
+                const reportData = JSON.parse(reportDataJson);
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                doc.setFont('courier');
+                doc.setFontSize(8);
+
+                let yPosition = 20;
+                const leftMargin = 10;
+                const lineHeight = 4;
+
+                // Header
+                doc.text(`PRINT DATE/TIME : ${new Date().toLocaleString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(',', '')} PRINTED BY : SYSTEM`, leftMargin, yPosition);
+                yPosition += lineHeight;
+
+                doc.text('PAGE : 1', leftMargin, yPosition);
+                yPosition += lineHeight * 2;
+
+                // Title (centered)
+                doc.setFontSize(10);
+                doc.text('WEB HELPDESK SYSTEM', 148, yPosition, { align: 'center' });
+                yPosition += lineHeight;
+                doc.text('TICKET PER MAJOR CONCERN REPORT', 148, yPosition, { align: 'center' });
+                yPosition += lineHeight;
+                doc.line(leftMargin, yPosition, 285, yPosition);
+                yPosition += lineHeight;
+
+                doc.setFontSize(7);
+                const headerText = 'REQUEST NO  APP REF NO  REQUESTED DATE REQUESTED BY            ENDORSED TO               TICKET NO   REQUEST TYPE   START DATE/TIME        END DATE/TIME          RESPONSE DAYS/TIME';
+                doc.text(headerText, leftMargin, yPosition);
+                yPosition += lineHeight;
+
+                doc.line(leftMargin, yPosition, 285, yPosition);
+                yPosition += lineHeight;
+
+                const startDate = new Date(reportData.startDate).toLocaleDateString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric'
+                });
+                const endDate = new Date(reportData.endDate).toLocaleDateString('en-US', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric'
+                });
+                doc.text(`${startDate} - ${endDate}`, leftMargin, yPosition);
+                yPosition += lineHeight * 2;
+
+                const groupedData = {};
+                reportData.tickets.forEach(ticket => {
+                    const concern = ticket.majorConcern || 'GENERAL';
+                    if (!groupedData[concern]) {
+                        groupedData[concern] = [];
+                    }
+                    groupedData[concern].push(ticket);
+                });
+
+                Object.keys(groupedData).sort().forEach(concern => {
+                    const tickets = groupedData[concern];
+
+                    if (yPosition > 180) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+
+                    doc.setFontSize(8);
+                    doc.text(`MAJOR CONCERN: ${concern.toUpperCase()}`, leftMargin, yPosition);
+                    yPosition += lineHeight;
+
+                    doc.text(`Total Tickets Served: ${tickets.length}`, leftMargin, yPosition);
+                    yPosition += lineHeight;
+
+                    tickets.forEach(ticket => {
+
+                        if (yPosition > 185) {
+                            doc.addPage();
+                            yPosition = 20;
+                        }
+
+                        const requestedDate = new Date(ticket.requestedDate).toLocaleDateString('en-US', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            year: 'numeric'
+                        });
+
+                        const startDateTime = ticket.startDateTime ?
+                            new Date(ticket.startDateTime).toLocaleString('en-US', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: false
+                            }).replace(',', '') : 'N/A';
+
+                        const endDateTime = ticket.endDateTime ?
+                            new Date(ticket.endDateTime).toLocaleString('en-US', {
+                                month: '2-digit',
+                                day: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: false
+                            }).replace(',', '') : 'N/A';
+
+                        const dataLine =
+                            `${ticket.requestNo.padEnd(12)}` +
+                            `${(ticket.appRefNo || 'N/A').padEnd(12)}` +
+                            `${requestedDate.padEnd(15)}` +
+                            `${ticket.requestedBy.substring(0, 25).padEnd(26)}` +
+                            `${(ticket.endorsedTo || 'N/A').substring(0, 25).padEnd(26)}` +
+                            `${ticket.ticketNo.padEnd(12)}` +
+                            `${ticket.requestType.padEnd(15)}` +
+                            `${startDateTime.padEnd(23)}` +
+                            `${endDateTime.padEnd(23)}` +
+                            `${ticket.responseDays}`;
+
+                        doc.setFontSize(7);
+                        doc.text(dataLine, leftMargin, yPosition);
+                        yPosition += lineHeight;
+
+                        const concern = `CONCERN: ${ticket.concern || 'No description'}`;
+                        const maxLineLength = 120;
+                        const concernLines = [];
+                        for (let i = 0; i < concern.length; i += maxLineLength) {
+                            concernLines.push(concern.substring(i, i + maxLineLength));
+                        }
+
+                        concernLines.forEach(line => {
+                            if (yPosition > 185) {
+                                doc.addPage();
+                                yPosition = 20;
+                            }
+                            doc.text(line, leftMargin, yPosition);
+                            yPosition += lineHeight;
+                        });
+
+                        yPosition += lineHeight;
+                    });
+
+                    yPosition += lineHeight;
+                });
+
+                doc.save(filename);
+
+            } catch (error) {
+                console.error('PDF export failed:', error);
+                alert('Failed to export PDF: ' + error.message);
+            }
+        };
+
+        // Enhanced HTML generator for better print layout - FIXED VERSION
+        function generateEnhancedPrintHTML(reportData) {
+            return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Report - Print View</title>
+    <style>
+        @@page {
+            size: A4 landscape;
+            margin: 0.5in;
+        }
+        
+        @@media print {
+            body { 
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+            .no-print { display: none !important; }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
+            line-height: 1.2;
+            color: #000;
+            background: white;
+            padding: 20px;
+        }
+        
+        .header {
+            margin-bottom: 15px;
+        }
+        
+        .header-line {
+            margin: 2px 0;
+            font-weight: normal;
+        }
+        
+        .title-section {
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        
+        .separator {
+            border-top: 2px solid #000;
+            margin: 8px 0;
+            width: 100%;
+        }
+        
+        .table-header {
+            font-weight: bold;
+            margin: 5px 0;
+            background: #f0f0f0;
+            padding: 3px 0;
+            font-size: 8px;
+        }
+        
+        .date-range {
+            margin: 8px 0;
+            font-weight: bold;
+        }
+        
+        .major-concern {
+            margin-top: 15px;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .total-served {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .ticket-row {
+            margin: 2px 0;
+            font-family: 'Courier New', monospace;
+            white-space: pre;
+            font-size: 8px;
+            page-break-inside: avoid;
+        }
+        
+        .concern-row {
+            margin: 2px 0 8px 0;
+            word-wrap: break-word;
+            font-size: 8px;
+        }
+        
+        .print-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        @@media print {
+            .print-btn { display: none; }
+            body { padding: 0; }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-btn no-print" onclick="window.print()">🖨️ Print to PDF</button>
+    
+    <div class="header">
+        <div class="header-line">PRINT DATE/TIME : ${new Date().toLocaleString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).replace(',', '')} PRINTED BY : SYSTEM</div>
+        <div class="header-line">PAGE : 1</div>
+    </div>
+    
+    <div class="title-section">
+        <div>WEB HELPDESK SYSTEM</div>
+        <div>TICKET PER MAJOR CONCERN REPORT</div>
+    </div>
+    
+    <div class="separator"></div>
+    
+    <div class="table-header">
+        REQUEST NO  APP REF NO  REQUESTED DATE REQUESTED BY            ENDORSED TO               TICKET NO   REQUEST TYPE   START DATE/TIME        END DATE/TIME          RESPONSE DAYS/TIME
+    </div>
+    
+    <div class="separator"></div>
+    
+    <div class="date-range">${new Date(reportData.startDate).toLocaleDateString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+            })} - ${new Date(reportData.endDate).toLocaleDateString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric'
+            })}</div>
+    
+    ${generateTicketContent(reportData.tickets)}
+</body>
+</html>`;
+        }
+
+        function generateTicketContent(tickets) {
+            // Group by major concern
+            const groupedData = {};
+            tickets.forEach(ticket => {
+                const concern = ticket.majorConcern || 'GENERAL';
+                if (!groupedData[concern]) {
+                    groupedData[concern] = [];
+                }
+                groupedData[concern].push(ticket);
+            });
+
+            let content = '';
+
+            Object.keys(groupedData).sort().forEach(concern => {
+                const ticketList = groupedData[concern];
+
+                content += `<div class="major-concern">MAJOR CONCERN: ${concern.toUpperCase()}</div>`;
+                content += `<div class="total-served">Total Tickets Served: ${ticketList.length}</div>`;
+
+                ticketList.forEach(ticket => {
+                    const requestedDate = new Date(ticket.requestedDate).toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric'
+                    });
+
+                    const startDateTime = ticket.startDateTime ?
+                        new Date(ticket.startDateTime).toLocaleString('en-US', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        }).replace(',', '') : 'N/A';
+
+                    const endDateTime = ticket.endDateTime ?
+                        new Date(ticket.endDateTime).toLocaleString('en-US', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        }).replace(',', '') : 'N/A';
+
+                    const dataLine =
+                        `${ticket.requestNo.padEnd(12)}` +
+                        `${(ticket.appRefNo || 'N/A').padEnd(12)}` +
+                        `${requestedDate.padEnd(15)}` +
+                        `${ticket.requestedBy.substring(0, 25).padEnd(26)}` +
+                        `${(ticket.endorsedTo || 'N/A').substring(0, 25).padEnd(26)}` +
+                        `${ticket.ticketNo.padEnd(12)}` +
+                        `${ticket.requestType.padEnd(15)}` +
+                        `${startDateTime.padEnd(23)}` +
+                        `${endDateTime.padEnd(23)}` +
+                        `${ticket.responseDays}`;
+
+                    content += `<div class="ticket-row">${dataLine}</div>`;
+                    content += `<div class="concern-row">CONCERN: ${ticket.concern || 'No description'}</div>`;
+                });
+            });
+
+            return content;
+        }
     </script>
 </body>
 

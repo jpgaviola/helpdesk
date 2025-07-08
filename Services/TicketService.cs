@@ -29,6 +29,39 @@ namespace HelpdeskBlazor.Services
             }
         }
 
+        public async Task<List<TicketReportItem>> GenerateTicketReportAsync(DateTime startDate, DateTime endDate, string? majorConcern = null)
+        {
+            var query = _context.Tickets
+                .Include(t => t.AssignedToUser)
+                .Where(t => !t.IsDeleted &&
+                           t.CreatedDate >= startDate &&
+                           t.CreatedDate <= endDate);
+
+            if (!string.IsNullOrEmpty(majorConcern))
+            {
+                query = query.Where(t => t.Category == majorConcern);
+            }
+
+            var tickets = await query.OrderBy(t => t.CreatedDate).ToListAsync();
+
+            return tickets.Select(t => new TicketReportItem
+            {
+                RequestNo = $"2025-{t.Id:D5}",
+                AppRefNo = t.AppReferenceNo ?? "N/A",
+                RequestedDate = t.CreatedDate,
+                RequestedBy = t.RequesterName ?? "Unknown",
+                EndorsedTo = t.AssignedToUser?.Name ?? "N/A",
+                TicketNo = $"2025-{t.Id:D5}",
+                RequestType = "LEGAL",
+                StartDateTime = t.CreatedDate,
+                EndDateTime = t.ModifiedDate,
+                ResponseDays = t.ModifiedDate.HasValue ?
+                    (int)(t.ModifiedDate.Value - t.CreatedDate).TotalDays : 0,
+                Concern = t.Description ?? "No description",
+                MajorConcern = t.Category ?? "General"
+            }).ToList();
+        }
+
         public async Task<Ticket?> GetTicketByIdAsync(int id)
         {
             return await _context.Tickets

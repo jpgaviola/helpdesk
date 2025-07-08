@@ -1457,24 +1457,19 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Phone Number</label>
-                        <InputText class="form-input" @bind-Value="newUser.Phone" placeholder="+63 917 XXX XXXX" />
-                        <ValidationMessage For="() => newUser.Phone" />
-                    </div>
-                    <div class="form-group">
                         <label class="form-label">Location</label>
                         <InputText class="form-input" @bind-Value="newUser.Location" placeholder="City, Country" />
                         <ValidationMessage For="() => newUser.Location" />
                     </div>
-                </div>
-
-                <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Default Password *</label>
                         <InputText class="form-input" @bind-Value="newUser.Password" 
                                 type="password" placeholder="Set initial password" />
                         <ValidationMessage For="() => newUser.Password" />
                     </div>
+                </div>
+
+                <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Status</label>
                         <InputSelect class="form-select" @bind-Value="newUser.Status">
