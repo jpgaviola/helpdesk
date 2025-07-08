@@ -7,6 +7,7 @@
 @inject HelpdeskBlazor.Services.IUserService UserService
 @inject HelpdeskBlazor.Services.ISessionService SessionService
 @using HelpdeskBlazor.Models
+@inject HelpdeskBlazor.Services.IAuthorizationService AuthorizationService
 
 <style>
     .users-container {
@@ -1232,30 +1233,34 @@
                                             <i class="fas fa-eye"></i>
                                             View Details
                                         </button>
-                                        <button class="actions-menu-item" @onclick="() => EditUser(user.Id)" @onclick:stopPropagation="true">
-                                            <i class="fas fa-edit"></i>
-                                            Edit User
-                                        </button>
                                         
-                                        @if (user.Status == "Active")
+                                        @if (AuthorizationService.CanManageUsers(SessionService.CurrentUser))
                                         {
-                                            <button class="actions-menu-item" @onclick="() => DeactivateUser(user.Id)" @onclick:stopPropagation="true">
-                                                <i class="fas fa-pause"></i>
-                                                Deactivate
+                                            <button class="actions-menu-item" @onclick="() => EditUser(user.Id)" @onclick:stopPropagation="true">
+                                                <i class="fas fa-edit"></i>
+                                                Edit User
                                             </button>
-                                        }
-                                        else
-                                        {
-                                            <button class="actions-menu-item" @onclick="() => ActivateUser(user.Id)" @onclick:stopPropagation="true">
-                                                <i class="fas fa-play"></i>
-                                                Activate
-                                            </button>
-                                        }
+                                            
+                                            @if (user.Status == "Active")
+                                            {
+                                                <button class="actions-menu-item" @onclick="() => DeactivateUser(user.Id)" @onclick:stopPropagation="true">
+                                                    <i class="fas fa-pause"></i>
+                                                    Deactivate
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="actions-menu-item" @onclick="() => ActivateUser(user.Id)" @onclick:stopPropagation="true">
+                                                    <i class="fas fa-play"></i>
+                                                    Activate
+                                                </button>
+                                            }
 
-                                        <button class="actions-menu-item danger" @onclick="() => DeleteUser(user.Id)" @onclick:stopPropagation="true">
-                                            <i class="fas fa-trash"></i>
-                                            Delete
-                                        </button>
+                                            <button class="actions-menu-item danger" @onclick="() => DeleteUser(user.Id)" @onclick:stopPropagation="true">
+                                                <i class="fas fa-trash"></i>
+                                                Delete
+                                            </button>
+                                        }
                                     </div>
                                 </div>
                             </td>
@@ -1706,29 +1711,30 @@
     private User? userToDelete = null;
 
     private string GetRoleDisplayName(string role)
-{
-    if (string.IsNullOrEmpty(role))
-        return "Unknown";
-
-    return role.ToLower() switch
     {
-        "legalstaff" => "Legal Staff",
-        "legalcounsel" => "Legal Counsel", 
-        "requester" => "Requester",
-        _ => role
-    };
-}
+        if (string.IsNullOrEmpty(role))
+            return "Unknown";
+
+        return role.ToLower() switch
+        {
+            "legalstaff" => "Legal Staff",
+            "legalcounsel" => "Legal Counsel", 
+            "requester" => "Requester",
+            _ => role
+        };
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        if (!SessionService.IsAuthenticated)
+        if (!SessionService.IsAuthenticated || SessionService.CurrentUser == null)
         {
             Navigation.NavigateTo("/login");
             return;
         }
-        if (SessionService.CurrentUser?.Role != "legalstaff" && SessionService.CurrentUser?.Role != "legalcounsel")
+        
+        if (!AuthorizationService.CanAccessUsers(SessionService.CurrentUser))
         {
-            Navigation.NavigateTo("/dashboard");
+            Navigation.NavigateTo("/unauthorized");
             return;
         }
 

@@ -15,5 +15,6 @@ namespace HelpdeskBlazor.Services
         Task<byte[]> DownloadAttachmentAsync(int attachmentId);
         Task<DocumentItem> AddDocumentItemAsync(DocumentItem documentItem);
         Task<DocumentRequest?> ChangeDocumentRequestStatusAsync(int documentRequestId, string newStatus);
+        Task<List<DocumentRequest>> GetDocumentRequestsByUserAsync(int userId);
     }
 }

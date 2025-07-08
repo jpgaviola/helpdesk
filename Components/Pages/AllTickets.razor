@@ -9,6 +9,8 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject HelpdeskBlazor.Services.IDocumentRequestService DocumentRequestService
 @inject HelpdeskBlazor.Services.IUserService UserService
+@inject HelpdeskBlazor.Services.ISessionService SessionService
+@inject HelpdeskBlazor.Services.IAuthorizationService AuthorizationService
 
 <style>
     .tickets-container {
@@ -1240,12 +1242,15 @@
             <option value="Reject">Reject</option>
         </select>
     </div>
-        <div class="toolbar-right">
+    <div class="toolbar-right">
+    @if (SessionService.CurrentUser != null && SessionService.CurrentUser.Role.ToLower() != "requester")
+    {
         <button class="create-ticket-btn" @onclick="OpenReportModal">
             <i class="fas fa-chart-bar"></i>
             Generate Report
         </button>
-    </div>
+    }
+</div>
 </div>
 
 
@@ -1335,17 +1340,26 @@
                                     <i class="fas fa-paperclip"></i>
                                     View Attachments
                                 </button>
-                                <!-- Change Status -->
-                                <button class="actions-menu-item" @onclick="() => OpenStatusModal(request)" @onclick:stopPropagation="true">
-                                    <i class="fas fa-exchange-alt"></i>
-                                    Change Status
-                                </button>
                                 
-                                <!-- Delete action -->
-                                <button class="actions-menu-item danger" @onclick="() => DeleteRequest(request)" @onclick:stopPropagation="true">
-                                    <i class="fas fa-trash"></i>
-                                    Delete
-                                </button>
+                                <!-- Change Status - Only for tickets and only if user has permission -->
+                                @if (request.Type == "Ticket" && SessionService.CurrentUser != null && AuthorizationService.CanChangeTicketStatus(SessionService.CurrentUser, GetTicketFromRequest(request)))
+                                {
+                                    <button class="actions-menu-item" @onclick="() => OpenStatusModal(request)" @onclick:stopPropagation="true">
+                                        <i class="fas fa-exchange-alt"></i>
+                                        Change Status
+                                    </button>
+                                }
+                                
+                                <!-- Delete action - Check permission based on request type -->
+                                @if (SessionService.CurrentUser != null && 
+                                    ((request.Type == "Ticket" && AuthorizationService.CanDeleteTicket(SessionService.CurrentUser, GetTicketFromRequest(request))) ||
+                                    (request.Type == "Document" && SessionService.CurrentUser.Role == "legalstaff")))
+                                {
+                                    <button class="actions-menu-item danger" @onclick="() => DeleteRequest(request)" @onclick:stopPropagation="true">
+                                        <i class="fas fa-trash"></i>
+                                        Delete
+                                    </button>
+                                }
                             </div>
                         </div>
                     </td>
@@ -1955,6 +1969,18 @@ else
     private List<TicketReportItem> reportData = new List<TicketReportItem>();
     private bool isGeneratingReport = false;
 
+    private Ticket GetTicketFromRequest(UnifiedRequestModel request)
+    {
+        return new Ticket
+        {
+            Id = request.Id,
+            AssignedToUserId = request.AssignedToUserId,
+            CreatedBy = 0,
+            RequesterEmail = request.RequesterEmail,
+            Status = request.Status
+        };
+    }
+
     private List<string> majorConcerns = new List<string>
     {
         "CONTRACT REVIEW/PREPARATION",
@@ -2328,8 +2354,23 @@ else
 {
     try
     {
+        if (SessionService.CurrentUser == null)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
         var unifiedList = new List<UnifiedRequestModel>();
-        var tickets = await TicketService.GetAllTicketsAsync();
+        
+        List<Ticket> tickets;
+        if (SessionService.CurrentUser.Role.ToLower() == "legalstaff")
+        {
+            tickets = await TicketService.GetAllTicketsAsync();
+        }
+        else
+        {
+            tickets = await TicketService.GetTicketsForUserAsync(SessionService.CurrentUser.Id, SessionService.CurrentUser.Role);
+        }
         
         foreach (var ticket in tickets)
         {     
@@ -2356,7 +2397,7 @@ else
                     }
                     catch
                     {
-        
+                        
                     }
                 }
                 
@@ -2388,59 +2429,62 @@ else
                 };
                 
                 unifiedList.Add(ticketRequest);
-               
             }
             catch
             {
-                
+             
             }
         }
-        
-        var ticketCount = unifiedList.Count(r => r.Type == "Ticket");
-        var documentRequests = await DocumentRequestService.GetAllDocumentRequestsAsync();
+        List<DocumentRequest> documentRequests;
+        if (SessionService.CurrentUser.Role.ToLower() == "legalstaff")
+        {
+            documentRequests = await DocumentRequestService.GetAllDocumentRequestsAsync();
+        }
+        else if (SessionService.CurrentUser.Role.ToLower() == "legalcounsel")
+        {
+            documentRequests = await DocumentRequestService.GetDocumentRequestsByUserAsync(SessionService.CurrentUser.Id);
+        }
+        else
+        {
+            documentRequests = await DocumentRequestService.GetDocumentRequestsByUserAsync(SessionService.CurrentUser.Id);
+        }
 
-foreach (var docReq in documentRequests)
-{
-    // Create one unified request per document request (not per item)
-    var subject = $"Document Request #{docReq.Id} - {docReq.Company}";
-    
-    // Get all document items for this request
-    var documentItems = docReq.DocumentItems?.ToList() ?? new List<DocumentItem>();
-    
-    unifiedList.Add(new UnifiedRequestModel
-    {
-        Id = docReq.Id,
-        Type = "Document",
-        Subject = subject,
-        RequesterName = docReq.RequesterName ?? "Unknown User",
-        RequesterEmail = docReq.RequesterEmail ?? "unknown@company.com",
-        Status = docReq.Status ?? "Pending",
-        Department = "Legal",
-        Category = "Document Request",
-        CreatedDate = docReq.CreatedDate,
-        Description = docReq.Particulars ?? "No particulars provided",
-        Company = docReq.Company ?? "Unknown Company",
-        DateNeeded = docReq.DateNeeded,
-        TimeNeeded = docReq.TimeNeeded,
-        // For display purposes, show summary or first item
-        DocumentName = documentItems.Count > 1 
-            ? $"{documentItems.Count} Documents" 
-            : documentItems.FirstOrDefault()?.DocumentName ?? "N/A",
-        DocumentType = documentItems.Count > 1 
-            ? "Multiple Types" 
-            : documentItems.FirstOrDefault()?.Type ?? "N/A",
-        NumberOfCopies = documentItems.Sum(item => item.NumberOfCopies),
-        DocumentItemId = null, // Not needed anymore
-        DocumentItems = documentItems, // Add this new property to store all items
-        AssignedToUserId = null,
-        AssignedToUserName = null,
-        AssignedToUserEmail = null,
-        AssignedDate = null
-    });
-}
-        
-        var finalTicketCount = unifiedList.Count(r => r.Type == "Ticket");
-        var finalDocumentCount = unifiedList.Count(r => r.Type == "Document");
+        foreach (var docReq in documentRequests)
+        {
+            var subject = $"Document Request #{docReq.Id} - {docReq.Company}";
+            
+            var documentItems = docReq.DocumentItems?.ToList() ?? new List<DocumentItem>();
+            
+            unifiedList.Add(new UnifiedRequestModel
+            {
+                Id = docReq.Id,
+                Type = "Document",
+                Subject = subject,
+                RequesterName = docReq.RequesterName ?? "Unknown User",
+                RequesterEmail = docReq.RequesterEmail ?? "unknown@company.com",
+                Status = docReq.Status ?? "Pending",
+                Department = "Legal",
+                Category = "Document Request",
+                CreatedDate = docReq.CreatedDate,
+                Description = docReq.Particulars ?? "No particulars provided",
+                Company = docReq.Company ?? "Unknown Company",
+                DateNeeded = docReq.DateNeeded,
+                TimeNeeded = docReq.TimeNeeded,
+                DocumentName = documentItems.Count > 1 
+                    ? $"{documentItems.Count} Documents" 
+                    : documentItems.FirstOrDefault()?.DocumentName ?? "N/A",
+                DocumentType = documentItems.Count > 1 
+                    ? "Multiple Types" 
+                    : documentItems.FirstOrDefault()?.Type ?? "N/A",
+                NumberOfCopies = documentItems.Sum(item => item.NumberOfCopies),
+                DocumentItemId = null, 
+                DocumentItems = documentItems,
+                AssignedToUserId = null,
+                AssignedToUserName = null,
+                AssignedToUserEmail = null,
+                AssignedDate = null
+            });
+        }
         
         allRequests = unifiedList;
         filteredRequests = allRequests.ToList();

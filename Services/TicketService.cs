@@ -446,5 +446,89 @@ namespace HelpdeskBlazor.Services
                 .OrderBy(ts => ts.CreatedDate)
                 .ToListAsync();
         }
+
+        public async Task<List<Ticket>> GetTicketsForUserAsync(int userId, string userRole)
+        {
+            switch (userRole.ToLower())
+            {
+                case "legalstaff":
+                    return await _context.Tickets
+                        .Include(t => t.AssignedToUser)
+                        .Include(t => t.CreatedByUser)
+                        .OrderByDescending(t => t.CreatedDate)
+                        .ToListAsync();
+
+                case "legalcounsel":
+                    return await _context.Tickets
+                        .Include(t => t.AssignedToUser)
+                        .Include(t => t.CreatedByUser)
+                        .Where(t => t.AssignedToUserId == userId || t.CreatedBy == userId)
+                        .OrderByDescending(t => t.CreatedDate)
+                        .ToListAsync();
+
+                case "requester":
+                    var user = await _context.Users.FindAsync(userId);
+                    if (user != null)
+                    {
+                        return await _context.Tickets
+                            .Include(t => t.AssignedToUser)
+                            .Include(t => t.CreatedByUser)
+                            .Where(t => t.CreatedBy == userId || t.RequesterEmail == user.Email)
+                            .OrderByDescending(t => t.CreatedDate)
+                            .ToListAsync();
+                    }
+                    return new List<Ticket>();
+
+                default:
+                    return new List<Ticket>();
+            }
+        }
+
+        public async Task<bool> CanUserViewTicketAsync(int ticketId, int userId, string userRole)
+        {
+            var ticket = await _context.Tickets.FindAsync(ticketId);
+            if (ticket == null) return false;
+
+            switch (userRole.ToLower())
+            {
+                case "legalstaff":
+                    return true;
+
+                case "legalcounsel":
+                    return ticket.AssignedToUserId == userId || ticket.CreatedBy == userId;
+
+                case "requester":
+                    var user = await _context.Users.FindAsync(userId);
+                    return ticket.CreatedBy == userId ||
+                        (user != null && ticket.RequesterEmail == user.Email);
+
+                default:
+                    return false;
+            }
+        }
+
+        public async Task<bool> CanUserEditTicketAsync(int ticketId, int userId, string userRole)
+        {
+            var ticket = await _context.Tickets.FindAsync(ticketId);
+            if (ticket == null) return false;
+
+            switch (userRole.ToLower())
+            {
+                case "legalstaff":
+                    return true;
+
+                case "legalcounsel":
+                    return ticket.AssignedToUserId == userId;
+
+                case "requester":
+                    var user = await _context.Users.FindAsync(userId);
+                    return ticket.Status == "Pending" &&
+                        (ticket.CreatedBy == userId ||
+                            (user != null && ticket.RequesterEmail == user.Email));
+
+                default:
+                    return false;
+            }
+        }
     }
 }

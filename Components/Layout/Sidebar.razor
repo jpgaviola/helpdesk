@@ -1,5 +1,6 @@
 @inject NavigationManager Navigation
 @inject HelpdeskBlazor.Services.ISessionService SessionService
+@inject HelpdeskBlazor.Services.IAuthorizationService AuthorizationService
 
 <style>
     .sidebar {
@@ -200,34 +201,46 @@
     </div>
 
     <!-- Main navigation -->
-    <nav class="sidebar-nav">
-        <ul class="nav-list">
-            <li class="nav-item">
-                <a href="/tickets" class="nav-link @(IsActive("/tickets") ? "active" : "")">
-                    <i class="fas fa-ticket-alt"></i>
-                    <span>All Tickets</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/create" class="nav-link @(IsActive("/create") ? "active" : "")">
-                    <i class="fas fa-plus"></i>
-                    <span>Create Request</span>
-                </a>
-            </li>
-        </ul>
-
-        <div class="nav-section">
-            <div class="nav-section-title">Administration</div>
+    @if (SessionService.IsAuthenticated && SessionService.CurrentUser != null)
+    {
+        <nav class="sidebar-nav">
             <ul class="nav-list">
-                <li class="nav-item">
-                    <a href="/users" class="nav-link @(IsActive("/users") ? "active" : "")">
-                        <i class="fas fa-users"></i>
-                        <span>Users</span>
-                    </a>
-                </li>
+                @if (AuthorizationService.CanAccessAllTickets(SessionService.CurrentUser))
+                {
+                    <li class="nav-item">
+                        <a href="/tickets" class="nav-link @(IsActive("/tickets") ? "active" : "")">
+                            <i class="fas fa-ticket-alt"></i>
+                            <span>All Tickets</span>
+                        </a>
+                    </li>
+                }
+                @if (AuthorizationService.CanCreateRequests(SessionService.CurrentUser))
+                {
+                    <li class="nav-item">
+                        <a href="/create" class="nav-link @(IsActive("/create") ? "active" : "")">
+                            <i class="fas fa-plus"></i>
+                            <span>Create Request</span>
+                        </a>
+                    </li>
+                }
             </ul>
-        </div>
-    </nav>
+
+            @if (AuthorizationService.CanAccessUsers(SessionService.CurrentUser))
+            {
+                <div class="nav-section">
+                    <div class="nav-section-title">Administration</div>
+                    <ul class="nav-list">
+                        <li class="nav-item">
+                            <a href="/users" class="nav-link @(IsActive("/users") ? "active" : "")">
+                                <i class="fas fa-users"></i>
+                                <span>Users</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            }
+        </nav>
+    }
 
     <!-- Logout section -->
     <div class="sidebar-footer">
@@ -247,12 +260,18 @@
     {
         currentPath = Navigation.Uri;
         Navigation.LocationChanged += OnLocationChanged;
+        SessionService.OnUserChanged += OnUserChanged;
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
         currentPath = e.Location;
         StateHasChanged();
+    }
+
+    private async void OnUserChanged()
+    {
+        await InvokeAsync(StateHasChanged);
     }
 
     private bool IsActive(string path)
@@ -270,13 +289,11 @@
         try
         {
             SessionService.ClearSession();
-
             Navigation.NavigateTo("/login", forceLoad: true);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Logout error: {ex.Message}");
-
             Navigation.NavigateTo("/login", forceLoad: true);
         }
     }
@@ -284,5 +301,6 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
+        SessionService.OnUserChanged -= OnUserChanged;
     }
 }

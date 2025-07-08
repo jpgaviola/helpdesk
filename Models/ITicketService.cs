@@ -5,6 +5,9 @@ namespace HelpdeskBlazor.Services
     public interface ITicketService
     {
         Task<List<Ticket>> GetAllTicketsAsync();
+        Task<List<Ticket>> GetTicketsForUserAsync(int userId, string userRole);
+        Task<bool> CanUserViewTicketAsync(int ticketId, int userId, string userRole);
+        Task<bool> CanUserEditTicketAsync(int ticketId, int userId, string userRole);
         Task<Ticket?> GetTicketByIdAsync(int id);
         Task<Ticket> CreateTicketAsync(Ticket ticket);
         Task<Ticket> UpdateTicketAsync(Ticket ticket);

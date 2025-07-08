@@ -14,6 +14,7 @@ namespace HelpdeskBlazor.Services
     public class SessionService : ISessionService
     {
         private User? _currentUser;
+
         public User? CurrentUser => _currentUser;
         public bool IsAuthenticated => _currentUser != null;
         public event Action? OnUserChanged;
@@ -21,11 +22,13 @@ namespace HelpdeskBlazor.Services
         public void SetCurrentUser(User user)
         {
             _currentUser = user;
+            _ = Task.Run(() => OnUserChanged?.Invoke());
         }
 
         public void ClearSession()
         {
             _currentUser = null;
+            _ = Task.Run(() => OnUserChanged?.Invoke());
         }
     }
 }

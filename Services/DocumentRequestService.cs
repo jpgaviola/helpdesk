@@ -189,5 +189,78 @@ namespace HelpdeskBlazor.Services
             }
         }
 
+        public async Task<List<DocumentRequest>> GetDocumentRequestsForUserAsync(int userId, string userRole)
+        {
+            switch (userRole.ToLower())
+            {
+                case "legalstaff":
+                    return await _context.DocumentRequests
+                        .Include(dr => dr.DocumentItems)
+                        .Include(dr => dr.CreatedByUser)
+                        .OrderByDescending(dr => dr.CreatedDate)
+                        .ToListAsync();
+
+                case "legalcounsel":
+                    return await _context.DocumentRequests
+                        .Include(dr => dr.DocumentItems)
+                        .Include(dr => dr.CreatedByUser)
+                        .Where(dr => dr.CreatedBy == userId)
+                        .OrderByDescending(dr => dr.CreatedDate)
+                        .ToListAsync();
+
+                case "requester":
+                    var user = await _context.Users.FindAsync(userId);
+                    if (user != null)
+                    {
+                        return await _context.DocumentRequests
+                            .Include(dr => dr.DocumentItems)
+                            .Include(dr => dr.CreatedByUser)
+                            .Where(dr => dr.CreatedBy == userId || dr.RequesterEmail == user.Email)
+                            .OrderByDescending(dr => dr.CreatedDate)
+                            .ToListAsync();
+                    }
+                    return new List<DocumentRequest>();
+
+                default:
+                    return new List<DocumentRequest>();
+            }
+        }
+
+        public async Task<bool> CanUserViewDocumentRequestAsync(int documentRequestId, int userId, string userRole)
+        {
+            var documentRequest = await _context.DocumentRequests.FindAsync(documentRequestId);
+            if (documentRequest == null) return false;
+
+            switch (userRole.ToLower())
+            {
+                case "legalstaff":
+                    return true;
+
+                case "legalcounsel":
+                    return documentRequest.CreatedBy == userId;
+
+                case "requester":
+                    var user = await _context.Users.FindAsync(userId);
+                    return documentRequest.CreatedBy == userId ||
+                        (user != null && documentRequest.RequesterEmail == user.Email);
+
+                default:
+                    return false;
+            }
+        }
+
+        public async Task<List<DocumentRequest>> GetDocumentRequestsByUserAsync(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return new List<DocumentRequest>();
+
+            return await _context.DocumentRequests
+                .Include(dr => dr.DocumentItems)
+                .Include(dr => dr.CreatedByUser)
+                .Where(dr => !dr.IsDeleted &&
+                       (dr.CreatedBy == userId || dr.RequesterEmail == user.Email))
+                .OrderByDescending(dr => dr.CreatedDate)
+                .ToListAsync();
+        }
     }
 }

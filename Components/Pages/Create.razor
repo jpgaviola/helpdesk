@@ -1,6 +1,8 @@
 @page "/create"
 @using Microsoft.AspNetCore.Components
 @inject NavigationManager Navigation
+@inject HelpdeskBlazor.Services.ISessionService SessionService
+@inject HelpdeskBlazor.Services.IAuthorizationService AuthorizationService
 
 <style>
     .create-selection-container {
@@ -322,5 +324,18 @@
 </div>
 
 @code {
+    protected override void OnInitialized()
+    {
+        if (!SessionService.IsAuthenticated || SessionService.CurrentUser == null)
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
 
+        if (!AuthorizationService.CanCreateRequests(SessionService.CurrentUser))
+        {
+            Navigation.NavigateTo("/unauthorized");
+            return;
+        }
+    }
 }

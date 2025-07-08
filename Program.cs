@@ -5,23 +5,19 @@ using HelpdeskBlazor.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Adding services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
-
 
 builder.Services.AddDbContext<HelpdeskDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
 builder.Services.AddScoped<IDocumentRequestService, DocumentRequestService>();
-
-
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddSingleton<ISessionService, SessionService>();
-
+builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 builder.Services.AddLogging(builder => builder.AddConsole());
 
 var app = builder.Build();
@@ -38,7 +34,6 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
-
 
 if (app.Environment.IsDevelopment())
 {
