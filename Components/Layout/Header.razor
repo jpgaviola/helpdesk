@@ -34,11 +34,6 @@
         border-radius: 8px;
         transition: background 0.3s ease;
         position: relative;
-        cursor: pointer;
-    }
-
-    .user-info:hover {
-        background: #f8f9fa;
     }
 
     .user-avatar {
@@ -52,106 +47,6 @@
         color: white;
         font-weight: 600;
         font-size: 14px;
-    }
-
-    .user-dropdown {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        background: #fff;
-        border: 1px solid #E7EAEE;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        min-width: 200px;
-        z-index: 1001;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-10px);
-        transition: all 0.3s ease;
-    }
-
-    .user-dropdown.show {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-    }
-
-    .dropdown-header {
-        padding: 15px 20px;
-        border-bottom: 1px solid #E7EAEE;
-        background: #f8f9fa;
-    }
-
-    .dropdown-user-name {
-        font-weight: 600;
-        font-size: 14px;
-        color: #0A1A28;
-        margin: 0;
-    }
-
-    .dropdown-user-role {
-        font-size: 12px;
-        color: #666;
-        margin: 2px 0 0 0;
-    }
-
-    .dropdown-menu {
-        padding: 8px 0;
-    }
-
-    .dropdown-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 12px 20px;
-        color: #666;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        border: none;
-        background: none;
-        width: 100%;
-        text-align: left;
-        font-size: 14px;
-    }
-
-    .dropdown-item:hover {
-        background: #f8f9fa;
-        color: #0A1A28;
-    }
-
-    .dropdown-item.logout:hover {
-        background: #ffeaea;
-        color: #dc3545;
-    }
-
-    .dropdown-item i {
-        width: 16px;
-        text-align: center;
-        font-size: 14px;
-    }
-
-    .dropdown-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 1000;
-        display: none;
-    }
-
-    .dropdown-overlay.show {
-        display: block;
-    }
-
-    .user-info .fa-chevron-down {
-        transition: transform 0.3s ease;
-        font-size: 12px;
-    }
-
-    .user-info.menu-open .fa-chevron-down {
-        transform: rotate(180deg);
     }
 
     /* Responsive */
@@ -173,34 +68,11 @@
     <div class="header-right">
         @if (SessionService.IsAuthenticated)
         {
-            <div class="user-info @(showUserMenu ? "menu-open" : "")" @onclick="ToggleUserMenu">
+            <div class="user-info">
                 <div class="user-avatar">@GetUserInitials()</div>
                 <div>
                     <div style="font-weight: 600; font-size: 14px;">@GetCurrentUserName()</div>
                     <div style="font-size: 12px; color: #666;">@GetCurrentUserRole()</div>
-                </div>
-                <i class="fas fa-chevron-down" style="margin-left: 8px; color: #666;"></i>
-            </div>
-
-            <!-- User Dropdown Menu -->
-            <div class="user-dropdown @(showUserMenu ? "show" : "")">
-                <div class="dropdown-header">
-                    <div class="dropdown-user-name">@GetCurrentUserName()</div>
-                    <div class="dropdown-user-role">@GetCurrentUserRole()</div>
-                </div>
-                <div class="dropdown-menu">
-                    <button class="dropdown-item" @onclick="ViewProfile">
-                        <i class="fas fa-user"></i>
-                        <span>View Profile</span>
-                    </button>
-                    <button class="dropdown-item" @onclick="AccountSettings">
-                        <i class="fas fa-cog"></i>
-                        <span>Account Settings</span>
-                    </button>
-                    <button class="dropdown-item logout" @onclick="Logout">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </button>
                 </div>
             </div>
         }
@@ -217,8 +89,6 @@
     </div>
 </div>
 
-<div class="dropdown-overlay @(showUserMenu ? "show" : "")" @onclick="CloseUserMenu"></div>
-
 @code {
     private bool showUserMenu = false;
 
@@ -230,37 +100,6 @@
     public void Dispose()
     {
         SessionService.OnUserChanged -= StateHasChanged;
-    }
-
-    private void ToggleUserMenu()
-    {
-        showUserMenu = !showUserMenu;
-        StateHasChanged();
-    }
-
-    private void CloseUserMenu()
-    {
-        showUserMenu = false;
-        StateHasChanged();
-    }
-
-    private void ViewProfile()
-    {
-        showUserMenu = false;
-        Navigation.NavigateTo("/profile");
-    }
-
-    private void AccountSettings()
-    {
-        showUserMenu = false;
-        Navigation.NavigateTo("/account-settings");
-    }
-
-    private void Logout()
-    {
-        showUserMenu = false;
-        SessionService.ClearSession();
-        Navigation.NavigateTo("/login", true);
     }
 
     private string GetCurrentUserName()
