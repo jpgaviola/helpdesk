@@ -1265,7 +1265,6 @@ private void RemoveSignatory(int index)
 
     private async Task HandleSubmit()
 {
-
     if (!SessionService.IsAuthenticated)
     {
         await ShowToast("Authentication Error", "Please log in to create a ticket.", "error");
@@ -1363,10 +1362,8 @@ private void RemoveSignatory(int index)
             $"Your ticket #{createdTicket.Id} has been submitted and will be reviewed shortly.",
             "success");
 
-        showSuccessMessage = true;
-        ticketModel = new CreateTicketModel();
-        ticketModel.AuthorizedSignatories.Add(new AuthorizedSignatory());
-        uploadedFiles.Clear();
+        await Task.Delay(1500);
+        Navigation.NavigateTo("/tickets", true);
     }
     catch (Exception ex)
     {
@@ -1478,6 +1475,10 @@ private void RemoveSignatory(int index)
             $"Your ticket draft #{savedDraft.Id} has been saved. You can continue editing from the 'My Drafts' page.", 
             "success");
 
+        // Wait for toast to show, then navigate to drafts page
+        await Task.Delay(1500);
+        Navigation.NavigateTo("/drafts", true);
+
     }
     catch (Exception ex)
     {
@@ -1492,7 +1493,6 @@ private void RemoveSignatory(int index)
         StateHasChanged();
     }
 }
-
     private async Task ShowToast(string title, string message, string type = "success")
     {
         var toast = new ToastNotification

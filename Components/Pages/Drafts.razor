@@ -514,7 +514,6 @@
                     <div class="draft-content">
                         <p><strong>Company:</strong> @draft.Company</p>
                         <p><strong>Category:</strong> @draft.Category</p>
-                        <p class="draft-description">@TruncateText(draft.Description)</p>
                     </div>
                     <div class="draft-actions">
                         <button class="btn btn-primary btn-sm" @onclick="() => ContinueTicketDraft(draft.Id)">
@@ -1106,48 +1105,52 @@
     }
 
     private async Task HandleTicketSubmit()
+{
+    if (selectedTicketDraft == null) return;
+
+    isSubmitting = true;
+    try
     {
-        if (selectedTicketDraft == null) return;
-
-        isSubmitting = true;
-        try
+        var originalDraft = await TicketService.GetDraftByIdAsync(selectedTicketDraft.Id);
+        if (originalDraft == null)
         {
-            var originalDraft = await TicketService.GetDraftByIdAsync(selectedTicketDraft.Id);
-            if (originalDraft == null)
-            {
-                await ShowToast("Error", "Draft not found in database", "error");
-                return;
-            }
-
-            originalDraft.AppReferenceNo = selectedTicketDraft.AppReferenceNo;
-            originalDraft.Company = selectedTicketDraft.Company;
-            originalDraft.Location = selectedTicketDraft.Location;
-            originalDraft.Category = selectedTicketDraft.Category;
-            originalDraft.Department = selectedTicketDraft.Department;
-            originalDraft.Description = selectedTicketDraft.Description;
-            originalDraft.IsDraft = false;
-            originalDraft.Status = "Pending";
-            originalDraft.ModifiedDate = DateTime.Now;
-            originalDraft.Subject = $"{selectedTicketDraft.Category} - {selectedTicketDraft.Company}";
-
-            await TicketService.UpdateTicketAsync(originalDraft);
-
-            ticketDrafts?.RemoveAll(d => d.Id == selectedTicketDraft.Id);
-            CloseModal();
-
-            await ShowToast("Ticket Submitted", $"Ticket #{originalDraft.Id} has been submitted successfully!", "success");
-            StateHasChanged();
+            await ShowToast("Error", "Draft not found in database", "error");
+            return;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error submitting ticket: {ex.Message}");
-            await ShowToast("Submission Failed", $"Failed to submit ticket: {ex.Message}", "error");
-        }
-        finally
-        {
-            isSubmitting = false;
-        }
+
+        originalDraft.AppReferenceNo = selectedTicketDraft.AppReferenceNo;
+        originalDraft.Company = selectedTicketDraft.Company;
+        originalDraft.Location = selectedTicketDraft.Location;
+        originalDraft.Category = selectedTicketDraft.Category;
+        originalDraft.Department = selectedTicketDraft.Department;
+        originalDraft.Description = selectedTicketDraft.Description;
+        originalDraft.IsDraft = false;
+        originalDraft.Status = "Pending";
+        originalDraft.ModifiedDate = DateTime.Now;
+        originalDraft.Subject = $"{selectedTicketDraft.Category} - {selectedTicketDraft.Company}";
+
+        await TicketService.UpdateTicketAsync(originalDraft);
+
+        ticketDrafts?.RemoveAll(d => d.Id == selectedTicketDraft.Id);
+        CloseModal();
+
+        await ShowToast("Ticket Submitted", $"Ticket #{originalDraft.Id} has been submitted successfully!", "success");
+        
+        await Task.Delay(1500);
+        Navigation.NavigateTo("/tickets", true);
+        
+        StateHasChanged();
     }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error submitting ticket: {ex.Message}");
+        await ShowToast("Submission Failed", $"Failed to submit ticket: {ex.Message}", "error");
+    }
+    finally
+    {
+        isSubmitting = false;
+    }
+}
 
     private async Task DeleteDraft(string type, int draftId)
     {
@@ -1306,6 +1309,10 @@ private async Task HandleDocumentSubmit()
         CloseModal();
 
         await ShowToast("Document Request Submitted", $"Document request #{submitRequest.Id} has been submitted successfully!", "success");
+        
+        await Task.Delay(1500);
+        Navigation.NavigateTo("/tickets", true);
+        
         StateHasChanged();
     }
     catch (Exception ex)
