@@ -1208,6 +1208,12 @@
     font-weight: 600;
 }
 
+.pagination-btn.active {
+    background: #ff6b35 !important;
+    color: white !important;
+    border-color: #ff6b35 !important;
+}
+
 </style>
 
 <PageTitle>Helpdesk System</PageTitle>
@@ -1567,27 +1573,67 @@
 
     <!-- Update pagination info -->
     <div class="pagination">
-        <div class="pagination-info">
-            Showing @((currentPage - 1) * pageSize + 1) to @(Math.Min(currentPage * pageSize, filteredRequests.Count)) of @filteredRequests.Count requests
+            <div class="pagination-info">
+                Showing @(GetStartRecord()) to @(GetEndRecord()) of @filteredRequests.Count requests
+            </div>
+            
+            <div class="pagination-controls">
+                <!-- First Page -->
+                <button class="pagination-btn" @onclick="() => GoToPage(1)" 
+                        disabled="@(currentPage <= 1)" title="First Page">
+                    <i class="fas fa-angle-double-left"></i>
+                </button>
+                
+                @{
+                    var startPage = Math.Max(1, currentPage - 2);
+                    var endPage = Math.Min(GetTotalPages(), currentPage + 2);
+                }
+                
+                @if (startPage > 1)
+                {
+                    <button class="pagination-btn" @onclick="() => GoToPage(1)">1</button>
+                    @if (startPage > 2)
+                    {
+                        <span style="padding: 8px; color: #666;">...</span>
+                    }
+                }
+                
+                @for (int i = startPage; i <= endPage; i++)
+                {
+                    var pageNum = i;
+                    <button class="pagination-btn @(currentPage == i ? "active" : "")" 
+                            @onclick="() => GoToPage(pageNum)">
+                        @i
+                    </button>
+                }
+                
+                @if (endPage < GetTotalPages())
+                {
+                    @if (endPage < GetTotalPages() - 1)
+                    {
+                        <span style="padding: 8px; color: #666;">...</span>
+                    }
+                    <button class="pagination-btn" @onclick="() => GoToPage(GetTotalPages())">
+                        @GetTotalPages()
+                    </button>
+                }
+                
+                <!-- Last Page -->
+                <button class="pagination-btn" @onclick="() => GoToPage(GetTotalPages())" 
+                        disabled="@(currentPage >= GetTotalPages())" title="Last Page">
+                    <i class="fas fa-angle-double-right"></i>
+                </button>
+            </div>
         </div>
-        <div class="pagination-controls">
-            <button class="pagination-btn" @onclick="PreviousPage" disabled="@(currentPage <= 1)">
-                <i class="fas fa-chevron-left"></i> Previous
-            </button>
-            <button class="pagination-btn" @onclick="NextPage" disabled="@(currentPage >= GetTotalPages())">
-                Next <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
-    </div>
-}
-else
-{
-    <div class="empty-state">
-        <i class="fas fa-inbox"></i>
-        <h3>No Requests Found</h3>
-        <p>@(string.IsNullOrEmpty(searchTerm) ? "There are no requests to display." : "No requests match your search criteria.")</p>
-    </div>
-}
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <h3>No Requests Found</h3>
+                <p>@(string.IsNullOrEmpty(searchTerm) ? "There are no requests to display." : "No requests match your search criteria.")</p>
+            </div>
+        }
     </div>
 </div>
 
@@ -2159,7 +2205,7 @@ else
     private string sortDirection = "desc";
     
     private int currentPage = 1;
-    private int pageSize = 10;
+    private int pageSize = 5;
     private int activeDropdown = 0;
     private bool showEditModal = false;
     private bool isEditSubmitting = false;
@@ -2513,81 +2559,117 @@ else
         FilterAndSortRequests();
     }
 
-    private void FilterAndSortRequests()
+    private int GetStartRecord()
+{
+    if (filteredRequests.Count == 0) return 0;
+    return (currentPage - 1) * pageSize + 1;
+}
+
+private int GetEndRecord()
+{
+    return Math.Min(currentPage * pageSize, filteredRequests.Count);
+}
+
+    private List<UnifiedRequestModel> GetPaginatedRequests()
+{
+    return filteredRequests
+        .Skip((currentPage - 1) * pageSize)
+        .Take(pageSize)
+        .ToList();
+}
+
+private int GetTotalPages()
+{
+    return (int)Math.Ceiling((double)filteredRequests.Count / pageSize);
+}
+
+private void PreviousPage()
+{
+    if (currentPage > 1)
     {
-        var query = allRequests.AsQueryable();
-
-        if (!string.IsNullOrEmpty(searchTerm))
-        {
-            query = query.Where(r => r.Subject.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                        r.RequesterName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                        r.RequesterEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                        r.Id.ToString().Contains(searchTerm) ||
-                        (r.Company != null && r.Company.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)));
-        }
-
-        if (!string.IsNullOrEmpty(typeFilter))
-        {
-            query = query.Where(r => r.Type == typeFilter);
-        }
-
-        if (!string.IsNullOrEmpty(statusFilter))
-        {
-            query = query.Where(r => r.Status == statusFilter);
-        }
-
-        if (!string.IsNullOrEmpty(priorityFilter))
-        {
-            query = query.Where(r => r.Priority == priorityFilter);
-        }
-
-        query = sortColumn switch
-        {
-            "Id" => sortDirection == "asc" ? query.OrderBy(r => r.Id) : query.OrderByDescending(r => r.Id),
-            "Type" => sortDirection == "asc" ? query.OrderBy(r => r.Type) : query.OrderByDescending(r => r.Type),
-            "Subject" => sortDirection == "asc" ? query.OrderBy(r => r.Subject) : query.OrderByDescending(r => r.Subject),
-            "Status" => sortDirection == "asc" ? query.OrderBy(r => r.Status) : query.OrderByDescending(r => r.Status),
-            "Priority" => sortDirection == "asc" ? query.OrderBy(r => r.Priority) : query.OrderByDescending(r => r.Priority),
-            "Requester" => sortDirection == "asc" ? query.OrderBy(r => r.RequesterName) : query.OrderByDescending(r => r.RequesterName),
-            "CreatedDate" => sortDirection == "asc" ? query.OrderBy(r => r.CreatedDate) : query.OrderByDescending(r => r.CreatedDate),
-            _ => query.OrderByDescending(r => r.CreatedDate)
-        };
-
-        filteredRequests = query.ToList();
+        currentPage--;
+        StateHasChanged();
     }
+}
+
+private void NextPage()
+{
+    if (currentPage < GetTotalPages())
+    {
+        currentPage++;
+        StateHasChanged();
+    }
+}
+
+private void GoToPage(int page)
+{
+    if (page >= 1 && page <= GetTotalPages())
+    {
+        currentPage = page;
+        StateHasChanged();
+    }
+}
+
+private void ChangePageSize(int newPageSize)
+{
+    pageSize = newPageSize;
+    currentPage = 1;
+    StateHasChanged();
+}
+
+private void FilterAndSortRequests()
+{
+    var query = allRequests.AsQueryable();
+
+    if (!string.IsNullOrEmpty(searchTerm))
+    {
+        query = query.Where(r => r.Subject.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    r.RequesterName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    r.RequesterEmail.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    r.Id.ToString().Contains(searchTerm) ||
+                    (r.Company != null && r.Company.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    if (!string.IsNullOrEmpty(typeFilter))
+    {
+        query = query.Where(r => r.Type == typeFilter);
+    }
+
+    if (!string.IsNullOrEmpty(statusFilter))
+    {
+        query = query.Where(r => r.Status == statusFilter);
+    }
+
+    if (!string.IsNullOrEmpty(priorityFilter))
+    {
+        query = query.Where(r => r.Priority == priorityFilter);
+    }
+
+    query = sortColumn switch
+    {
+        "Id" => sortDirection == "asc" ? query.OrderBy(r => r.Id) : query.OrderByDescending(r => r.Id),
+        "Type" => sortDirection == "asc" ? query.OrderBy(r => r.Type) : query.OrderByDescending(r => r.Type),
+        "Subject" => sortDirection == "asc" ? query.OrderBy(r => r.Subject) : query.OrderByDescending(r => r.Subject),
+        "Status" => sortDirection == "asc" ? query.OrderBy(r => r.Status) : query.OrderByDescending(r => r.Status),
+        "Priority" => sortDirection == "asc" ? query.OrderBy(r => r.Priority) : query.OrderByDescending(r => r.Priority),
+        "Requester" => sortDirection == "asc" ? query.OrderBy(r => r.RequesterName) : query.OrderByDescending(r => r.RequesterName),
+        "CreatedDate" => sortDirection == "asc" ? query.OrderBy(r => r.CreatedDate) : query.OrderByDescending(r => r.CreatedDate),
+        _ => query.OrderByDescending(r => r.CreatedDate)
+    };
+
+    filteredRequests = query.ToList();
+    
+    if (currentPage > GetTotalPages() && GetTotalPages() > 0)
+    {
+        currentPage = 1;
+    }
+    
+    StateHasChanged();
+}
 
     private void FilterAndSortTickets()
     {
         FilterAndSortRequests();
-    }
-
-    private List<UnifiedRequestModel> GetPaginatedRequests()
-    {
-        return filteredRequests
-            .Skip((currentPage - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
-    }
-
-    private int GetTotalPages()
-    {
-        return (int)Math.Ceiling((double)filteredRequests.Count / pageSize);
-    }
-
-    private void PreviousPage()
-    {
-        if (currentPage > 1)
-        {
-            currentPage--;
-        }
-    }
-
-    private void NextPage()
-    {
-        if (currentPage < GetTotalPages())
-        {
-            currentPage++;
-        }
     }
 
     private int GetTotalRequests() => allRequests.Count;
