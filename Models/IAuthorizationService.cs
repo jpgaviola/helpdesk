@@ -15,5 +15,8 @@ namespace HelpdeskBlazor.Services
         bool CanAssignTicket(User user, Ticket ticket);
         bool CanManageUsers(User user);
         bool CanAccessPage(User user, string pagePath);
+        List<string> GetAllowedStatusChanges(User user, string currentStatus, string requestType);
+        bool CanChangeToStatus(User user, string currentStatus, string newStatus, string requestType);
+        bool CanChangeDocumentRequestStatus(User user, DocumentRequest documentRequest);
     }
 }

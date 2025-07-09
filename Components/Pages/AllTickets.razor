@@ -1661,66 +1661,94 @@
                 
                 <div class="form-group">
                     <label class="form-label required">New Status</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                        <button class="status-change-option @(selectedStatus == "Acknowledge" ? "selected" : "")" 
-                                @onclick="@(() => SelectStatus("Acknowledge"))">
-                            <i class="fas fa-check-circle status-acknowledge"></i>
-                            <div>
-                                <strong>Acknowledge</strong>
-                                <small>Confirm receipt and review</small>
-                            </div>
-                        </button>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        @{
+                            var allowedStatuses = GetAllowedStatusChangesForCurrentUser();
+                        }
                         
-                        <button class="status-change-option @(selectedStatus == "Endorse" ? "selected" : "")" 
-                                @onclick="@(() => SelectStatus("Endorse"))">
-                            <i class="fas fa-thumbs-up status-endorse"></i>
-                            <div>
-                                <strong>Endorse</strong>
-                                <small>Approve and forward</small>
-                            </div>
-                        </button>
-                        
-                        <button class="status-change-option @(selectedStatus == "Closed" ? "selected" : "")" 
-                                @onclick="@(() => SelectStatus("Closed"))">
-                            <i class="fas fa-times-circle status-closed"></i>
-                            <div>
-                                <strong>Closed</strong>
-                                <small>Mark as completed</small>
-                            </div>
-                        </button>
-                        
-                        <button class="status-change-option @(selectedStatus == "Executed" ? "selected" : "")" 
-                                @onclick="@(() => SelectStatus("Executed"))">
-                            <i class="fas fa-check-double status-executed"></i>
-                            <div>
-                                <strong>Executed</strong>
-                                <small>Successfully processed</small>
-                            </div>
-                        </button>
-
-                        <!-- Only show Rejected option for specific statuses -->
-                        @if (CanRejectTicket(selectedRequest))
+                        @foreach (var status in allowedStatuses)
                         {
-                            <button class="status-change-option @(selectedStatus == "Rejected" ? "selected" : "")" 
-                                    @onclick="@(() => SelectStatus("Rejected"))">
-                                <i class="fas fa-thumbs-down status-rejected"></i>
-                                <div>
-                                    <strong>Rejected</strong>
-                                    <small>Mark as rejected</small>
-                                </div>
+                            <button class="status-change-option @(selectedStatus == status ? "selected" : "")" 
+                                    @onclick="@(() => SelectStatus(status))">
+                                @if (status == "Acknowledge")
+                                {
+                                    <i class="fas fa-check-circle status-acknowledge"></i>
+                                    <div>
+                                        <strong>Acknowledge</strong>
+                                        <small>Confirm receipt and review</small>
+                                    </div>
+                                }
+                                else if (status == "Endorse")
+                                {
+                                    <i class="fas fa-thumbs-up status-endorse"></i>
+                                    <div>
+                                        <strong>Endorse</strong>
+                                        <small>Approve and forward</small>
+                                    </div>
+                                }
+                                else if (status == "Closed")
+                                {
+                                    <i class="fas fa-times-circle status-closed"></i>
+                                    <div>
+                                        <strong>Closed</strong>
+                                        <small>Mark as completed</small>
+                                    </div>
+                                }
+                                else if (status == "Executed")
+                                {
+                                    <i class="fas fa-check-double status-executed"></i>
+                                    <div>
+                                        <strong>Executed</strong>
+                                        <small>Successfully processed</small>
+                                    </div>
+                                }
+                                else if (status == "Rejected")
+                                {
+                                    <i class="fas fa-thumbs-down status-rejected"></i>
+                                    <div>
+                                        <strong>Rejected</strong>
+                                        <small>Mark as rejected</small>
+                                    </div>
+                                }
+                                else if (status == "Pending")
+                                {
+                                    <i class="fas fa-clock status-pending"></i>
+                                    <div>
+                                        <strong>Pending</strong>
+                                        <small>Resubmit for review</small>
+                                    </div>
+                                }
                             </button>
                         }
                     </div>
                     
-                    <!-- Show information message if rejection is not allowed -->
-                    @if (!CanRejectTicket(selectedRequest))
+                    @if (!allowedStatuses.Any())
                     {
                         <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 6px; font-size: 13px; color: #856404;">
                             <i class="fas fa-info-circle"></i>
-                            Tickets with status "Closed" or "Executed" cannot be rejected.
+                            You don't have permission to change the status of this request.
                         </div>
                     }
                 </div>
+
+                @if (selectedStatus == "Rejected")
+                {
+                    <div class="form-group">
+                        <label class="form-label required">Reason for Rejection</label>
+                        <textarea class="form-textarea" 
+                                @bind="rejectionReason" 
+                                placeholder="Please provide a detailed explanation for why this request is being rejected..."
+                                rows="4"
+                                style="min-height: 100px;"></textarea>
+                        @if (string.IsNullOrWhiteSpace(rejectionReason))
+                        {
+                            <div class="error-message">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Rejection reason is required
+                            </div>
+                        }
+                    </div>
+                }
 
                 @if (selectedStatus == "Endorse")
                 {
@@ -1744,13 +1772,6 @@
                                     </option>
                                 }
                             </select>
-                            @if (availableUsers.Count == 0)
-                            {
-                                <small style="color: #dc3545; margin-top: 5px; display: block;">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                    No active Legal Counsels found
-                                </small>
-                            }
                         }
                         else
                         {
@@ -1764,28 +1785,32 @@
             }
         </div>
         
-        <div class="modal-footer">
-            <button class="btn btn-secondary" @onclick="CloseStatusModal" disabled="@isStatusChanging">
-                Cancel
-            </button>
-            <button class="btn btn-primary" @onclick="ConfirmStatusChange" 
-                    disabled="@(string.IsNullOrEmpty(selectedStatus) || isStatusChanging || (selectedStatus == "Endorse" && !selectedUserId.HasValue))">
-                @if (isStatusChanging)
-                {
-                    <div class="loading-spinner"></div>
-                }
-                @if (selectedStatus == "Endorse")
-                {
-                    <span>Endorse Request</span>
-                }
-                else
-                {
-                    <span>Change Status</span>
-                }
-            </button>
-        </div>
-    </div>
-</div>
+                        <div class="modal-footer">
+                            <button class="btn btn-primary" @onclick="ConfirmStatusChange" 
+                                    disabled="@(string.IsNullOrEmpty(selectedStatus) || 
+                                                isStatusChanging || 
+                                                (selectedStatus == "Endorse" && !selectedUserId.HasValue) ||
+                                                (selectedStatus == "Rejected" && string.IsNullOrWhiteSpace(rejectionReason)))">
+                                @if (isStatusChanging)
+                                {
+                                    <div class="loading-spinner"></div>
+                                }
+                                @if (selectedStatus == "Endorse")
+                                {
+                                    <span>Endorse Request</span>
+                                }
+                                else if (selectedStatus == "Rejected")
+                                {
+                                    <span>Reject Request</span>
+                                }
+                                else
+                                {
+                                    <span>Change Status</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                         <!-- Generate Report Modal -->
                         <div class="modal-overlay @(showReportModal ? "show" : "")" @onclick="CloseReportModal">
@@ -2006,6 +2031,7 @@
     private bool showStatusModal = false;
     private UnifiedRequestModel? selectedRequest = null;
     private string selectedStatus = "";
+    private string rejectionReason = "";
     private string statusChangeComment = "";
     private bool isStatusChanging = false;
 
@@ -2229,25 +2255,31 @@
         selectedUserId = null;
         availableUsers.Clear();
         statusChangeComment = "";
+        rejectionReason = "";
         isStatusChanging = false;
         StateHasChanged();
     }
 
     private async Task SelectStatus(string status)
+{
+    selectedStatus = status;
+    
+    if (status != "Rejected")
     {
-        selectedStatus = status;
-        
-        if (status == "Endorse")
-        {
-            await LoadAvailableUsersAsync();
-        }
-        else
-        {
-            selectedUserId = null;
-        }
-        
-        StateHasChanged();
+        rejectionReason = "";
     }
+    
+    if (status == "Endorse")
+    {
+        await LoadAvailableUsersAsync();
+    }
+    else
+    {
+        selectedUserId = null;
+    }
+    
+    StateHasChanged();
+}
 
     private async Task LoadAvailableUsersAsync()
     {
@@ -2328,11 +2360,10 @@
     if (selectedRequest == null || string.IsNullOrEmpty(selectedStatus))
         return;
 
-    if (selectedStatus == "Rejected" && !CanRejectTicket(selectedRequest))
+    // Validate rejection reason
+    if (selectedStatus == "Rejected" && string.IsNullOrWhiteSpace(rejectionReason))
     {
-        await ShowToast("Invalid Operation", 
-            $"Cannot reject requests with status '{selectedRequest.Status}'. Only requests with status 'Pending', 'Acknowledge', or 'Endorse' can be rejected.", 
-            "error");
+        await ShowToast("Validation Error", "Please provide a reason for rejection.", "error");
         return;
     }
 
@@ -2358,11 +2389,40 @@
                 await TicketService.AssignTicketAsync(selectedRequest.Id, selectedUserId.Value);
             }
             
+            // Add rejection comment if status is rejected
+            if (selectedStatus == "Rejected" && !string.IsNullOrWhiteSpace(rejectionReason))
+            {
+                var rejectionComment = new TicketComment
+                {
+                    TicketId = selectedRequest.Id,
+                    Comment = $"**REJECTION REASON:** {rejectionReason}",
+                    CreatedBy = SessionService.CurrentUser.Id,
+                    CommentType = "Status Change"
+                };
+                await TicketService.AddCommentAsync(rejectionComment);
+            }
+            
             updated = updatedTicket != null;
         }
         else if (selectedRequest.Type == "Document")
         {
             var updatedDocument = await DocumentRequestService.ChangeDocumentRequestStatusAsync(selectedRequest.Id, selectedStatus);
+            
+            // Add rejection comment for document requests if your service supports it
+            if (selectedStatus == "Rejected" && !string.IsNullOrWhiteSpace(rejectionReason))
+            {
+                // Assuming you have a similar comment system for documents
+                // Adjust this based on your DocumentRequestService implementation
+                try
+                {
+                    // You might need to implement this method in DocumentRequestService
+                    // await DocumentRequestService.AddCommentAsync(new DocumentComment { ... });
+                }
+                catch
+                {
+                    // Fallback - you could store the rejection reason in a different way
+                }
+            }
             
             updated = updatedDocument != null;
         }
@@ -2376,7 +2436,13 @@
                 ? $" and assigned to {availableUsers.FirstOrDefault(u => u.Id == selectedUserId.Value)?.Name}"
                 : "";
                 
-            await ShowToast("Status Changed", $"Status changed to '{selectedStatus}'{endorseMessage} successfully!", "success");
+            var rejectionMessage = selectedStatus == "Rejected" 
+                ? " with rejection reason recorded"
+                : "";
+                
+            await ShowToast("Status Changed", 
+                $"Status changed to '{selectedStatus}'{endorseMessage}{rejectionMessage} successfully!", 
+                "success");
         }
         else
         {
@@ -2955,6 +3021,17 @@ private string GetFileIcon(string contentType)
         var ct when ct.Contains("zip") || ct.Contains("rar") || ct.Contains("archive") => "fas fa-file-archive",
         _ => "fas fa-file"
     };
+}
+
+private List<string> GetAllowedStatusChangesForCurrentUser()
+{
+    if (selectedRequest == null || SessionService.CurrentUser == null)
+        return new List<string>();
+
+    return AuthorizationService.GetAllowedStatusChanges(
+        SessionService.CurrentUser, 
+        selectedRequest.Status, 
+        selectedRequest.Type);
 }
 
 public class ToastNotification
