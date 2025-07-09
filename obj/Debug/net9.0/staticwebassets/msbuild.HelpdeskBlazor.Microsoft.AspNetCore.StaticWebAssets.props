@@ -900,5 +900,23 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\38\0729aef9-2bd2-47bb-ab13-5c3c3d8f2c12_Screenshot 2025-06-24 151648.png'))</OriginalItemSpec>
     </StaticWebAsset>
+    <StaticWebAsset Include="$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\drafts\48\da865ecf-7319-4d07-9c70-7821430544e1_Screenshot 2025-06-24 151648.png'))">
+      <SourceType>Package</SourceType>
+      <SourceId>HelpdeskBlazor</SourceId>
+      <ContentRoot>$(MSBuildThisFileDirectory)..\staticwebassets\</ContentRoot>
+      <BasePath>_content/HelpdeskBlazor</BasePath>
+      <RelativePath>uploads/drafts/48/da865ecf-7319-4d07-9c70-7821430544e1_Screenshot 2025-06-24 151648.png</RelativePath>
+      <AssetKind>All</AssetKind>
+      <AssetMode>All</AssetMode>
+      <AssetRole>Primary</AssetRole>
+      <RelatedAsset></RelatedAsset>
+      <AssetTraitName></AssetTraitName>
+      <AssetTraitValue></AssetTraitValue>
+      <Fingerprint>3g2xb5dwhm</Fingerprint>
+      <Integrity>o3nL7tU+VK5cepdZlwa5h5YiHjUhOf0ueMDsja+EgCI=</Integrity>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <OriginalItemSpec>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\staticwebassets\uploads\drafts\48\da865ecf-7319-4d07-9c70-7821430544e1_Screenshot 2025-06-24 151648.png'))</OriginalItemSpec>
+    </StaticWebAsset>
   </ItemGroup>
 </Project>

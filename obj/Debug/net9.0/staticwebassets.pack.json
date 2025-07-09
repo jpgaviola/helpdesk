@@ -201,6 +201,10 @@
       "PackagePath": "staticwebassets\\uploads\\38\\0729aef9-2bd2-47bb-ab13-5c3c3d8f2c12_Screenshot 2025-06-24 151648.png"
     },
     {
+      "Id": "C:\\Projects\\helpdesk\\wwwroot\\uploads\\drafts\\48\\da865ecf-7319-4d07-9c70-7821430544e1_Screenshot 2025-06-24 151648.png",
+      "PackagePath": "staticwebassets\\uploads\\drafts\\48\\da865ecf-7319-4d07-9c70-7821430544e1_Screenshot 2025-06-24 151648.png"
+    },
+    {
       "Id": "obj\\Debug\\net9.0\\staticwebassets\\msbuild.HelpdeskBlazor.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
       "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
     },
