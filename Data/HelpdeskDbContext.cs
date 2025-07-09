@@ -77,6 +77,10 @@ namespace HelpdeskBlazor.Data
         entity.Property(e => e.RequestDate).HasColumnType("datetime2");
         entity.Property(e => e.DateNeeded).HasColumnType("datetime2");
 
+        entity.Property(e => e.DraftSavedDate).HasColumnType("datetime2");
+        entity.Property(e => e.LastModifiedDate).HasColumnType("datetime2");
+        entity.Property(e => e.IsDraft).HasDefaultValue(false);
+
         entity.Property(e => e.RequesterName)
                   .HasMaxLength(100)
                   .IsRequired(false);
@@ -90,6 +94,11 @@ namespace HelpdeskBlazor.Data
         entity.HasIndex(e => e.CreatedDate);
         entity.HasIndex(e => e.Category);
         entity.HasIndex(e => e.Department);
+
+        entity.HasIndex(e => e.IsDraft);
+        entity.HasIndex(e => new { e.CreatedBy, e.IsDraft });
+        entity.HasIndex(e => new { e.IsDraft, e.Status });
+        entity.HasIndex(e => e.DraftSavedDate);
 
         entity.HasIndex(e => e.AssignedToUserId);
         entity.HasIndex(e => e.CreatedBy);
@@ -184,6 +193,11 @@ namespace HelpdeskBlazor.Data
         entity.Property(e => e.ModifiedDate).HasColumnType("datetime2");
         entity.Property(e => e.DateNeeded).HasColumnType("datetime2");
 
+        // ADD THESE DRAFT-RELATED COLUMNS FOR DOCUMENT REQUESTS
+        entity.Property(e => e.DraftSavedDate).HasColumnType("datetime2");
+        entity.Property(e => e.LastModifiedDate).HasColumnType("datetime2");
+        entity.Property(e => e.IsDraft).HasDefaultValue(false);
+
         entity.Property(e => e.RequesterName)
                   .HasMaxLength(100)
                   .IsRequired(false);
@@ -195,6 +209,12 @@ namespace HelpdeskBlazor.Data
         entity.HasIndex(e => e.Status);
         entity.HasIndex(e => e.CreatedDate);
         entity.HasIndex(e => e.Company);
+
+        // ADD THESE NEW INDEXES FOR DRAFT FUNCTIONALITY
+        entity.HasIndex(e => e.IsDraft);
+        entity.HasIndex(e => new { e.CreatedBy, e.IsDraft });
+        entity.HasIndex(e => new { e.IsDraft, e.Status });
+        entity.HasIndex(e => e.DraftSavedDate);
 
         entity.HasIndex(e => e.CreatedBy);
         entity.HasIndex(e => e.RequesterEmail);

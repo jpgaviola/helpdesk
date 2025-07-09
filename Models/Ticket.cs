@@ -55,9 +55,6 @@ namespace HelpdeskBlazor.Models
         [Required]
         public bool IsDeleted { get; set; } = false;
 
-        [Required]
-        public bool IsDraft { get; set; } = false;
-
         [StringLength(50)]
         public string? AppReferenceNo { get; set; }
 
@@ -78,6 +75,10 @@ namespace HelpdeskBlazor.Models
 
         [StringLength(100)]
         public string? RequesterEmail { get; set; }
+
+        public bool IsDraft { get; set; } = false;
+        public DateTime? DraftSavedDate { get; set; }
+        public DateTime? LastModifiedDate { get; set; }
 
         // Navigation properties
         [ForeignKey("AssignedToUserId")]

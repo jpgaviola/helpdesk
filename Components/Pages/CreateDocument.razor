@@ -821,30 +821,26 @@
                     <i class="fas fa-arrow-left"></i>
                     Cancel
                 </a>
-
                 <div style="display: flex; gap: 15px;">
-                    @if (lastCreatedRequestId > 0)
-                    {
-                        <button type="button" class="btn btn-primary" @onclick="CreateAnotherRequest">
-                            <i class="fas fa-plus"></i>
-                            Create Another Request
-                        </button>
-                    }
-                    else
-                    {
-                        <button type="button" class="btn btn-primary" @onclick="SubmitRequest" disabled="@isSubmitting">
-                            @if (isSubmitting)
-                            {
-                                <div class="loading-spinner"></div>
-                                <span>Creating Request...</span>
-                            }
-                            else
-                            {
-                                <i class="fas fa-paper-plane"></i>
-                                <span>Create Document Request</span>
-                            }
-                        </button>
-                    }
+                    <!-- Save as Draft Button -->
+                    <button type="button" class="btn btn-secondary" @onclick="SaveAsDraft" disabled="@isSubmitting">
+                        <i class="fas fa-save"></i>
+                        Save as Draft
+                    </button>
+
+                    <!-- Submit Button -->
+                    <button type="button" class="btn btn-primary" @onclick="SubmitRequest" disabled="@isSubmitting">
+                        @if (isSubmitting)
+                        {
+                            <div class="loading-spinner"></div>
+                            <span>Creating Request...</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Create Document Request</span>
+                        }
+                    </button>
                 </div>
             </div>
         </div>
@@ -909,6 +905,125 @@
         requestModel.TimeNeeded = new TimeOnly(9, 0);
 
         AddDocument();
+    }
+
+    private async Task SaveAsDraft()
+    {
+        if (!SessionService.IsAuthenticated)
+        {
+            await ShowToast("Authentication Error", "Please log in to save draft.", "error");
+            return;
+        }
+
+        try
+        {
+            isSubmitting = true;
+
+            var documentSummary = documents.Where(d => !string.IsNullOrWhiteSpace(d.DocumentName))
+            .Select(d => d.DocumentName)
+            .ToList();
+
+            var particularsText = documentSummary.Count > 0
+            ? $"DRAFT: Documents requested - {string.Join(", ", documentSummary)}"
+            : "Document Request Draft";
+
+            var draftRequest = new DocumentRequest
+            {
+                Company = requestModel.Company ?? "",
+                DateNeeded = requestModel.DateNeeded,
+                TimeNeeded = requestModel.TimeNeeded,
+                Particulars = particularsText,
+                Status = "Draft",
+                IsDraft = true,
+                DraftSavedDate = DateTime.Now,
+                LastModifiedDate = DateTime.Now,
+                CreatedBy = SessionService.CurrentUser?.Id,
+                RequesterName = SessionService.CurrentUser?.Name,
+                RequesterEmail = SessionService.CurrentUser?.Email,
+                CreatedDate = DateTime.Now,
+                IsDeleted = false
+            };
+
+            var savedDraft = await DocumentRequestService.CreateDocumentRequestAsync(draftRequest);
+
+            foreach (var doc in documents.Where(d => !string.IsNullOrWhiteSpace(d.DocumentName)))
+            {
+                var documentItem = new DocumentItem
+                {
+                    DocumentRequestId = savedDraft.Id,
+                    DocumentName = doc.DocumentName,
+                    Type = doc.Type ?? "",
+                    NumberOfCopies = doc.NumberOfCopies > 0 ? doc.NumberOfCopies : 1,
+                    Particulars = doc.Particulars ?? "",
+                    CreatedDate = DateTime.Now
+                };
+
+                await DocumentRequestService.AddDocumentItemAsync(documentItem);
+            }
+
+            foreach (var file in generalAttachments)
+            {
+                try
+                {
+                    var savedFilePath = await SaveFileAsDraft(file, savedDraft.Id);
+
+                    var attachment = new DocumentRequestAttachment
+                    {
+                        DocumentRequestId = savedDraft.Id,
+                        FileName = file.Name,
+                        FilePath = savedFilePath,
+                        ContentType = file.ContentType,
+                        FileSize = file.Size,
+                        UploadedBy = SessionService.CurrentUser?.Id,
+                        UploadedDate = DateTime.Now
+                    };
+
+                    await DocumentRequestService.AddAttachmentAsync(attachment);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error saving draft attachment: {ex.Message}");
+                }
+            }
+
+            await ShowToast("Draft Saved Successfully!",
+            $"Your document request draft #{savedDraft.Id} has been saved. You can continue editing from the 'My Drafts' page.",
+            "success");
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving draft: {ex.Message}");
+            await ShowToast("Draft Save Error",
+            $"Could not save draft: {ex.Message}",
+            "error");
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task<string> SaveFileAsDraft(IBrowserFile file, int requestId)
+    {
+        try
+        {
+            var uploadsPath = Path.Combine("wwwroot", "uploads", "drafts", "documents", requestId.ToString());
+            Directory.CreateDirectory(uploadsPath);
+
+            var fileName = $"{Guid.NewGuid()}_{file.Name}";
+            var filePath = Path.Combine(uploadsPath, fileName);
+
+            using var fileStream = new FileStream(filePath, FileMode.Create);
+            await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(fileStream);
+
+            return $"/uploads/drafts/documents/{requestId}/{fileName}";
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Failed to save draft file {file.Name}: {ex.Message}");
+        }
     }
 
     private void AddDocument()

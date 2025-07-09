@@ -967,8 +967,7 @@
                         <label class="form-label required">Company</label>
                         <InputSelect @bind-Value="ticketModel.Company" class="form-select">
                             <option value="">Select Company</option>
-                            <option value="SMPC">SMPC
-                            </option>
+                            <option value="SMPC">SMPC</option>
                             <option value="SCPC">SCPC</option>
                             <option value="SLPGC">SLPGC</option>
                             <option value="SCRC">SCRC</option>
@@ -1160,37 +1159,27 @@
                     </a>
 
                     <div style="display: flex; gap: 15px;">
-                        @if (lastCreatedTicketId > 0)
-                        {
-                            <!-- Show navigation button after successful creation -->
-                            <a href="/tickets" class="btn btn-secondary">
-                                <i class="fas fa-list"></i>
-                                View All Tickets
-                            </a>
-                            <button type="button" class="btn btn-primary" @onclick="CreateAnotherTicket">
-                                <i class="fas fa-plus"></i>
-                                Create Another Ticket
-                            </button>
-                        }
-                        else
-                        {
-                            <!-- Show normal form buttons -->
-                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
-                                @if (isSubmitting)
-                                {
-                                    <div class="loading-spinner"></div>
-                                    <span>Creating Ticket...</span>
-                                }
-                                else
-                                {
-                                    <i class="fas fa-paper-plane"></i>
-                                    <span>Create Ticket</span>
-                                }
-                            </button>
-                        }
+                        <!-- Save as Draft Button -->
+                        <button type="button" class="btn btn-secondary" @onclick="SaveAsDraft" disabled="@isSubmitting">
+                            <i class="fas fa-save"></i>
+                            Save as Draft
+                        </button>
+                        
+                        <!-- Main Submit Button -->
+                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                            @if (isSubmitting)
+                            {
+                                <div class="loading-spinner"></div>
+                                <span>Creating Ticket...</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-paper-plane"></i>
+                                <span>Create Ticket</span>
+                            }
+                        </button>
                     </div>
                 </div>
-
             </EditForm>
         </div>
         <!-- Toast Container -->
@@ -1302,7 +1291,6 @@ private void RemoveSignatory(int index)
             Description = description,
             Status = "Pending",
             Priority = "Medium",
-            IsDraft = false,
             CreatedDate = DateTime.Now,
             CreatedBy = SessionService.CurrentUser?.Id,
             RequesterName = SessionService.CurrentUser?.Name,
@@ -1395,9 +1383,115 @@ private void RemoveSignatory(int index)
 }
 
     private async Task SaveAsDraft()
+{
+    if (!SessionService.IsAuthenticated)
     {
-        await ShowToast("Draft Saved", "Your ticket has been saved as a draft!", "info");
+        await ShowToast("Authentication Error", "Please log in to save draft.", "error");
+        return;
     }
+
+    try
+    {
+        isSubmitting = true;
+
+        var draftTicket = new Ticket
+        {
+            AppReferenceNo = string.IsNullOrWhiteSpace(ticketModel.AppReferenceNo) ? "N/A" : ticketModel.AppReferenceNo,
+            RequestDate = ticketModel.RequestDate,
+            Company = ticketModel.Company ?? "",
+            Location = ticketModel.Location ?? "",
+            DateNeeded = ticketModel.DateNeeded,
+            TimeNeeded = ticketModel.TimeNeeded,
+            Department = ticketModel.Department ?? "",
+            Category = ticketModel.Category ?? "",
+            Description = ticketModel.Description ?? "",
+            Status = "Draft",
+            Priority = "Medium",
+            IsDraft = true,
+            DraftSavedDate = DateTime.Now,
+            LastModifiedDate = DateTime.Now,
+            CreatedDate = DateTime.Now,
+            CreatedBy = SessionService.CurrentUser?.Id,
+            RequesterName = SessionService.CurrentUser?.Name,
+            RequesterEmail = SessionService.CurrentUser?.Email,
+            Subject = !string.IsNullOrEmpty(ticketModel.Category) 
+                ? $"DRAFT: {ticketModel.Category} - {ticketModel.Company}" 
+                : "Draft Ticket"
+        };
+
+        var savedDraft = await TicketService.CreateTicketAsync(draftTicket);
+
+        if (ticketModel.AuthorizedSignatories.Any(s => !string.IsNullOrWhiteSpace(s.Name)))
+        {
+            foreach (var signatory in ticketModel.AuthorizedSignatories)
+            {
+                if (!string.IsNullOrWhiteSpace(signatory.Name))
+                {
+                    await TicketService.AddTicketSignatoryAsync(new TicketSignatory
+                    {
+                        TicketId = savedDraft.Id,
+                        SignatoryName = signatory.Name,
+                        SignatoryPosition = signatory.Position ?? "",
+                        CreatedDate = DateTime.Now,
+                        IsDeleted = false
+                    });
+                }
+            }
+        }
+
+        if (uploadedFiles?.Count > 0)
+        {
+            var uploadPath = Path.Combine("wwwroot", "uploads", "drafts", savedDraft.Id.ToString());
+            Directory.CreateDirectory(uploadPath);
+
+            foreach (var file in uploadedFiles)
+            {
+                try
+                {
+                    var uniqueFileName = $"{Guid.NewGuid()}_{file.Name}";
+                    var filePath = Path.Combine(uploadPath, uniqueFileName);
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024).CopyToAsync(stream);
+
+                    var attachment = new TicketAttachment
+                    {
+                        TicketId = savedDraft.Id,
+                        FileName = file.Name,
+                        FilePath = $"/uploads/drafts/{savedDraft.Id}/{uniqueFileName}",
+                        ContentType = file.ContentType,
+                        FileSize = file.Size,
+                        UploadedDate = DateTime.Now,
+                        UploadedBy = SessionService.CurrentUser?.Id
+                    };
+
+                    await TicketService.AddAttachmentAsync(attachment);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error saving draft attachment: {ex.Message}");
+                }
+            }
+        }
+
+        await ShowToast("Draft Saved Successfully!", 
+            $"Your ticket draft #{savedDraft.Id} has been saved. You can continue editing from the 'My Drafts' page.", 
+            "success");
+
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error saving draft: {ex.Message}");
+        await ShowToast("Draft Save Error", 
+            $"Could not save draft: {ex.Message}", 
+            "error");
+    }
+    finally
+    {
+        isSubmitting = false;
+        StateHasChanged();
+    }
+}
 
     private async Task ShowToast(string title, string message, string type = "success")
     {

@@ -13,19 +13,22 @@ namespace HelpdeskBlazor.Services
             _context = context;
         }
 
-        public async Task<List<Ticket>> GetAllTicketsAsync()
+        public async Task<List<Ticket>> GetUserDraftsAsync(int userId)
         {
-            try
+            return await _context.Tickets
+                .Where(t => t.CreatedBy == userId && t.IsDraft == true && t.IsDeleted == false)
+                .OrderByDescending(t => t.DraftSavedDate ?? t.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task DeleteDraftAsync(int draftId)
+        {
+            var draft = await _context.Tickets.FindAsync(draftId);
+            if (draft != null && draft.IsDraft)
             {
-                return await _context.Tickets
-                    .Where(t => !t.IsDeleted)
-                    .OrderByDescending(t => t.CreatedDate)
-                    .ToListAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in GetAllTicketsAsync: {ex.Message}");
-                return new List<Ticket>();
+                draft.IsDeleted = true;
+                draft.ModifiedDate = DateTime.Now;
+                await _context.SaveChangesAsync();
             }
         }
 
@@ -35,7 +38,7 @@ namespace HelpdeskBlazor.Services
 
             var ticketsQuery = _context.Tickets
                 .Include(t => t.AssignedToUser)
-                .Where(t => !t.IsDeleted &&
+                .Where(t => !t.IsDeleted && !t.IsDraft &&
                            t.CreatedDate >= startDate &&
                            t.CreatedDate <= endDate);
 
@@ -162,19 +165,6 @@ namespace HelpdeskBlazor.Services
             return "CORPORATE DOCUMENTS";
         }
 
-        public async Task<Ticket?> GetTicketByIdAsync(int id)
-        {
-            return await _context.Tickets
-                .Include(t => t.AssignedToUser)
-                .Include(t => t.CreatedByUser)
-                .Include(t => t.Attachments)
-                .Include(t => t.Comments)
-                    .ThenInclude(c => c.CreatedByUser)
-                .Include(t => t.Signatories)
-                .Where(t => t.Id == id && !t.IsDeleted)
-                .FirstOrDefaultAsync();
-        }
-
         public async Task<Ticket> CreateTicketAsync(Ticket ticket)
         {
             ticket.CreatedDate = DateTime.Now;
@@ -204,6 +194,35 @@ namespace HelpdeskBlazor.Services
 
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<List<Ticket>> GetAllTicketsAsync()
+        {
+            try
+            {
+                return await _context.Tickets
+                    .Where(t => !t.IsDeleted && !t.IsDraft)
+                    .OrderByDescending(t => t.CreatedDate)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAllTicketsAsync: {ex.Message}");
+                return new List<Ticket>();
+            }
+        }
+
+        public async Task<Ticket?> GetTicketByIdAsync(int id)
+        {
+            return await _context.Tickets
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Attachments)
+                .Include(t => t.Comments)
+                    .ThenInclude(c => c.CreatedByUser)
+                .Include(t => t.Signatories)
+                .Where(t => t.Id == id && !t.IsDeleted && !t.IsDraft)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<List<Ticket>> GetTicketsByStatusAsync(string status)
@@ -337,7 +356,6 @@ namespace HelpdeskBlazor.Services
             if (attachment == null)
             {
 
-                // Debug: Show what attachments DO exist
                 var allAttachments = await _context.TicketAttachments.Select(a => new { a.Id, a.FileName }).ToListAsync();
 
                 foreach (var att in allAttachments)
@@ -447,6 +465,22 @@ namespace HelpdeskBlazor.Services
                 .ToListAsync();
         }
 
+        public async Task<List<Ticket>> GetAllNonDraftTicketsAsync()
+        {
+            try
+            {
+                return await _context.Tickets
+                    .Where(t => !t.IsDeleted && !t.IsDraft)
+                    .OrderByDescending(t => t.CreatedDate)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAllNonDraftTicketsAsync: {ex.Message}");
+                return new List<Ticket>();
+            }
+        }
+
         public async Task<List<Ticket>> GetTicketsForUserAsync(int userId, string userRole)
         {
             switch (userRole.ToLower())
@@ -455,6 +489,7 @@ namespace HelpdeskBlazor.Services
                     return await _context.Tickets
                         .Include(t => t.AssignedToUser)
                         .Include(t => t.CreatedByUser)
+                        .Where(t => !t.IsDeleted && !t.IsDraft)
                         .OrderByDescending(t => t.CreatedDate)
                         .ToListAsync();
 
@@ -462,7 +497,8 @@ namespace HelpdeskBlazor.Services
                     return await _context.Tickets
                         .Include(t => t.AssignedToUser)
                         .Include(t => t.CreatedByUser)
-                        .Where(t => t.AssignedToUserId == userId || t.CreatedBy == userId)
+                        .Where(t => !t.IsDeleted && !t.IsDraft &&
+                                   (t.AssignedToUserId == userId || t.CreatedBy == userId))
                         .OrderByDescending(t => t.CreatedDate)
                         .ToListAsync();
 
@@ -473,7 +509,8 @@ namespace HelpdeskBlazor.Services
                         return await _context.Tickets
                             .Include(t => t.AssignedToUser)
                             .Include(t => t.CreatedByUser)
-                            .Where(t => t.CreatedBy == userId || t.RequesterEmail == user.Email)
+                            .Where(t => !t.IsDeleted && !t.IsDraft &&
+                                       (t.CreatedBy == userId || t.RequesterEmail == user.Email))
                             .OrderByDescending(t => t.CreatedDate)
                             .ToListAsync();
                     }
@@ -486,7 +523,10 @@ namespace HelpdeskBlazor.Services
 
         public async Task<bool> CanUserViewTicketAsync(int ticketId, int userId, string userRole)
         {
-            var ticket = await _context.Tickets.FindAsync(ticketId);
+            var ticket = await _context.Tickets
+            .Where(t => !t.IsDraft)
+            .FirstOrDefaultAsync(t => t.Id == ticketId);
+
             if (ticket == null) return false;
 
             switch (userRole.ToLower())
@@ -509,7 +549,10 @@ namespace HelpdeskBlazor.Services
 
         public async Task<bool> CanUserEditTicketAsync(int ticketId, int userId, string userRole)
         {
-            var ticket = await _context.Tickets.FindAsync(ticketId);
+            var ticket = await _context.Tickets
+            .Where(t => !t.IsDraft)
+            .FirstOrDefaultAsync(t => t.Id == ticketId);
+
             if (ticket == null) return false;
 
             switch (userRole.ToLower())
@@ -529,6 +572,19 @@ namespace HelpdeskBlazor.Services
                 default:
                     return false;
             }
+        }
+
+        public async Task<Ticket?> GetDraftByIdAsync(int id)
+        {
+            return await _context.Tickets
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.CreatedByUser)
+                .Include(t => t.Attachments)
+                .Include(t => t.Comments)
+                    .ThenInclude(c => c.CreatedByUser)
+                .Include(t => t.Signatories)
+                .Where(t => t.Id == id && !t.IsDeleted && t.IsDraft)
+                .FirstOrDefaultAsync();
         }
     }
 }

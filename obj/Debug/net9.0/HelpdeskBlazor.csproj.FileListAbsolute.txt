@@ -412,4 +412,4 @@ C:\Projects\helpdesk\obj\Debug\net9.0\refint\HelpdeskBlazor.dll
 C:\Projects\helpdesk\obj\Debug\net9.0\HelpdeskBlazor.pdb
 C:\Projects\helpdesk\obj\Debug\net9.0\HelpdeskBlazor.genruntimeconfig.cache
 C:\Projects\helpdesk\obj\Debug\net9.0\ref\HelpdeskBlazor.dll
-C:\Projects\helpdesk\obj\Debug\net9.0\compressed\xzbwjcdze2-ai2ws37oh3.gz
+C:\Projects\helpdesk\obj\Debug\net9.0\compressed\xzbwjcdze2-hk6f30rw4v.gz

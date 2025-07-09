@@ -17,9 +17,37 @@ namespace HelpdeskBlazor.Services
         {
             return await _context.DocumentRequests
                 .Include(dr => dr.DocumentItems)
-                .Where(dr => !dr.IsDeleted)
+                .Where(dr => !dr.IsDeleted && !dr.IsDraft)
                 .OrderByDescending(dr => dr.CreatedDate)
                 .ToListAsync();
+        }
+
+        public async Task<List<DocumentRequest>> GetUserDraftsAsync(int userId)
+        {
+            return await _context.DocumentRequests
+                .Include(dr => dr.DocumentItems)
+                .Where(dr => dr.CreatedBy == userId && dr.IsDraft == true && dr.IsDeleted == false)
+                .OrderByDescending(dr => dr.DraftSavedDate ?? dr.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task DeleteDraftAsync(int draftId)
+        {
+            var draft = await _context.DocumentRequests.FindAsync(draftId);
+            if (draft != null && draft.IsDraft)
+            {
+                draft.IsDeleted = true;
+                draft.ModifiedDate = DateTime.Now;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<DocumentRequest> UpdateDocumentRequestAsync(DocumentRequest request)
+        {
+            request.ModifiedDate = DateTime.Now;
+            _context.DocumentRequests.Update(request);
+            await _context.SaveChangesAsync();
+            return request;
         }
 
         public async Task<DocumentRequestAttachment?> GetDocumentRequestAttachmentByIdAsync(int attachmentId)
@@ -40,13 +68,11 @@ namespace HelpdeskBlazor.Services
 
         public async Task<byte[]> DownloadAttachmentAsync(int attachmentId)
         {
-
-            var attachment = await _context.TicketAttachments
-                .FirstOrDefaultAsync(ta => ta.Id == attachmentId);
+            var attachment = await _context.DocumentRequestAttachments
+                .FirstOrDefaultAsync(dra => dra.Id == attachmentId);
 
             if (attachment == null)
             {
-
                 throw new FileNotFoundException("Attachment not found");
             }
 
@@ -67,11 +93,9 @@ namespace HelpdeskBlazor.Services
 
                 foreach (string testPath in possibleBasePaths)
                 {
-
                     if (File.Exists(testPath))
                     {
                         actualFilePath = testPath;
-
                         break;
                     }
                 }
@@ -90,7 +114,6 @@ namespace HelpdeskBlazor.Services
                 {
                     if (Directory.Exists(dir))
                     {
-
                         var files = Directory.GetFiles(dir, "*", SearchOption.AllDirectories);
 
                         foreach (var file in files.Take(5))
@@ -104,7 +127,6 @@ namespace HelpdeskBlazor.Services
             }
 
             var fileBytes = await File.ReadAllBytesAsync(actualFilePath);
-
             return fileBytes;
         }
 
@@ -124,15 +146,6 @@ namespace HelpdeskBlazor.Services
             documentRequest.IsDeleted = false;
 
             _context.DocumentRequests.Add(documentRequest);
-            await _context.SaveChangesAsync();
-            return documentRequest;
-        }
-
-        public async Task<DocumentRequest> UpdateDocumentRequestAsync(DocumentRequest documentRequest)
-        {
-            documentRequest.ModifiedDate = DateTime.Now;
-
-            _context.DocumentRequests.Update(documentRequest);
             await _context.SaveChangesAsync();
             return documentRequest;
         }
@@ -189,43 +202,6 @@ namespace HelpdeskBlazor.Services
             }
         }
 
-        public async Task<List<DocumentRequest>> GetDocumentRequestsForUserAsync(int userId, string userRole)
-        {
-            switch (userRole.ToLower())
-            {
-                case "legalstaff":
-                    return await _context.DocumentRequests
-                        .Include(dr => dr.DocumentItems)
-                        .Include(dr => dr.CreatedByUser)
-                        .OrderByDescending(dr => dr.CreatedDate)
-                        .ToListAsync();
-
-                case "legalcounsel":
-                    return await _context.DocumentRequests
-                        .Include(dr => dr.DocumentItems)
-                        .Include(dr => dr.CreatedByUser)
-                        .Where(dr => dr.CreatedBy == userId)
-                        .OrderByDescending(dr => dr.CreatedDate)
-                        .ToListAsync();
-
-                case "requester":
-                    var user = await _context.Users.FindAsync(userId);
-                    if (user != null)
-                    {
-                        return await _context.DocumentRequests
-                            .Include(dr => dr.DocumentItems)
-                            .Include(dr => dr.CreatedByUser)
-                            .Where(dr => dr.CreatedBy == userId || dr.RequesterEmail == user.Email)
-                            .OrderByDescending(dr => dr.CreatedDate)
-                            .ToListAsync();
-                    }
-                    return new List<DocumentRequest>();
-
-                default:
-                    return new List<DocumentRequest>();
-            }
-        }
-
         public async Task<bool> CanUserViewDocumentRequestAsync(int documentRequestId, int userId, string userRole)
         {
             var documentRequest = await _context.DocumentRequests.FindAsync(documentRequestId);
@@ -249,6 +225,111 @@ namespace HelpdeskBlazor.Services
             }
         }
 
+        public async Task<DocumentRequest> UpdateDocumentRequestWithItemsAsync(DocumentRequest request)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var existingRequest = await _context.DocumentRequests
+                    .FirstOrDefaultAsync(dr => dr.Id == request.Id);
+
+                if (existingRequest == null)
+                {
+                    throw new InvalidOperationException("Document request not found");
+                }
+
+                existingRequest.Company = request.Company;
+                existingRequest.DateNeeded = request.DateNeeded;
+                existingRequest.Particulars = request.Particulars;
+                existingRequest.IsDraft = request.IsDraft;
+                existingRequest.Status = request.Status;
+                existingRequest.DraftSavedDate = request.DraftSavedDate;
+                existingRequest.LastModifiedDate = request.LastModifiedDate;
+                existingRequest.ModifiedDate = DateTime.Now;
+
+                var existingItems = await _context.DocumentItems
+                    .Where(di => di.DocumentRequestId == request.Id)
+                    .ToListAsync();
+
+                _context.DocumentItems.RemoveRange(existingItems);
+
+                if (request.DocumentItems?.Any() == true)
+                {
+                    var newItems = request.DocumentItems.Select(item => new DocumentItem
+                    {
+                        DocumentRequestId = request.Id,
+                        DocumentName = item.DocumentName ?? "",
+                        Type = item.Type ?? "",
+                        NumberOfCopies = item.NumberOfCopies,
+                        Particulars = item.Particulars ?? "",
+                        CreatedDate = DateTime.Now,
+                        IsDeleted = false
+                    }).ToList();
+
+                    await _context.DocumentItems.AddRangeAsync(newItems);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Return fresh copy from database
+                return await GetDraftByIdAsync(request.Id) ?? existingRequest;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception($"Failed to update document request with items: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<DocumentRequest?> GetDraftByIdAsync(int id)
+        {
+            return await _context.DocumentRequests
+                .Include(dr => dr.DocumentItems.Where(di => !di.IsDeleted))
+                .Include(dr => dr.Attachments)
+                .Where(dr => dr.Id == id && !dr.IsDeleted && dr.IsDraft)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<DocumentRequest>> GetDocumentRequestsForUserAsync(int userId, string userRole)
+        {
+            switch (userRole.ToLower())
+            {
+                case "legalstaff":
+                    return await _context.DocumentRequests
+                        .Include(dr => dr.DocumentItems)
+                        .Include(dr => dr.CreatedByUser)
+                        .Where(dr => !dr.IsDeleted && !dr.IsDraft)
+                        .OrderByDescending(dr => dr.CreatedDate)
+                        .ToListAsync();
+
+                case "legalcounsel":
+                    return await _context.DocumentRequests
+                        .Include(dr => dr.DocumentItems)
+                        .Include(dr => dr.CreatedByUser)
+                        .Where(dr => dr.CreatedBy == userId && !dr.IsDeleted && !dr.IsDraft)
+                        .OrderByDescending(dr => dr.CreatedDate)
+                        .ToListAsync();
+
+                case "requester":
+                    var user = await _context.Users.FindAsync(userId);
+                    if (user != null)
+                    {
+                        return await _context.DocumentRequests
+                            .Include(dr => dr.DocumentItems)
+                            .Include(dr => dr.CreatedByUser)
+                            .Where(dr => (dr.CreatedBy == userId || dr.RequesterEmail == user.Email)
+                                   && !dr.IsDeleted && !dr.IsDraft)
+                            .OrderByDescending(dr => dr.CreatedDate)
+                            .ToListAsync();
+                    }
+                    return new List<DocumentRequest>();
+
+                default:
+                    return new List<DocumentRequest>();
+            }
+        }
+
         public async Task<List<DocumentRequest>> GetDocumentRequestsByUserAsync(int userId)
         {
             var user = await _context.Users.FindAsync(userId);
@@ -257,7 +338,7 @@ namespace HelpdeskBlazor.Services
             return await _context.DocumentRequests
                 .Include(dr => dr.DocumentItems)
                 .Include(dr => dr.CreatedByUser)
-                .Where(dr => !dr.IsDeleted &&
+                .Where(dr => !dr.IsDeleted && !dr.IsDraft &&
                        (dr.CreatedBy == userId || dr.RequesterEmail == user.Email))
                 .OrderByDescending(dr => dr.CreatedDate)
                 .ToListAsync();

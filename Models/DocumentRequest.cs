@@ -46,6 +46,10 @@ namespace HelpdeskBlazor.Models
         [StringLength(100)]
         public string? RequesterEmail { get; set; }
 
+        public bool IsDraft { get; set; } = false;
+        public DateTime? DraftSavedDate { get; set; }
+        public DateTime? LastModifiedDate { get; set; }
+
         // Navigation properties
         [ForeignKey("CreatedBy")]
         public virtual User? CreatedByUser { get; set; }

@@ -7,7 +7,6 @@ namespace HelpdeskBlazor.Services
         Task<List<DocumentRequest>> GetAllDocumentRequestsAsync();
         Task<DocumentRequest?> GetDocumentRequestByIdAsync(int id);
         Task<DocumentRequest> CreateDocumentRequestAsync(DocumentRequest documentRequest);
-        Task<DocumentRequest> UpdateDocumentRequestAsync(DocumentRequest documentRequest);
         Task<bool> DeleteDocumentRequestAsync(int id);
         Task<DocumentRequestAttachment> AddAttachmentAsync(DocumentRequestAttachment attachment);
         Task<DocumentRequestAttachment?> GetDocumentRequestAttachmentByIdAsync(int attachmentId);
@@ -16,5 +15,10 @@ namespace HelpdeskBlazor.Services
         Task<DocumentItem> AddDocumentItemAsync(DocumentItem documentItem);
         Task<DocumentRequest?> ChangeDocumentRequestStatusAsync(int documentRequestId, string newStatus);
         Task<List<DocumentRequest>> GetDocumentRequestsByUserAsync(int userId);
+        Task<List<DocumentRequest>> GetUserDraftsAsync(int userId);
+        Task DeleteDraftAsync(int draftId);
+        Task<DocumentRequest> UpdateDocumentRequestAsync(DocumentRequest request);
+        Task<DocumentRequest> UpdateDocumentRequestWithItemsAsync(DocumentRequest request);
+        Task<DocumentRequest?> GetDraftByIdAsync(int id);
     }
 }

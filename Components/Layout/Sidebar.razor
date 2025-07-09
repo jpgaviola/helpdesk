@@ -194,8 +194,6 @@
         <div class="sidebar-logo">
             <img src="@GetLogoPath()" alt="@GetCompanyName()" />
         </div>
-
-
         <h2 class="sidebar-title">
             <i class="fas fa-headset"></i>
             Helpdesk System
@@ -222,6 +220,12 @@
                         <a href="/create" class="nav-link @(IsActive("/create") ? "active" : "")">
                             <i class="fas fa-plus"></i>
                             <span>Create Request</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/drafts" class="nav-link @(IsActive("/drafts") ? "active" : "")">
+                            <i class="fas fa-edit"></i>
+                            <span>My Drafts</span>
                         </a>
                     </li>
                 }
